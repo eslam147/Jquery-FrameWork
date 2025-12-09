@@ -212,7 +212,31 @@ class Ajax {
                 ajaxOptions.data = actualData;
             } else {
                 // For POST, PUT, DELETE, PATCH, data goes in body
-                ajaxOptions.data = actualData;
+                // Check if data contains nested objects - if so, send as JSON to preserve nested structure
+                var hasNestedObjects = false;
+                if (typeof actualData === 'object' && actualData !== null && !Array.isArray(actualData)) {
+                    for (var key in actualData) {
+                        if (actualData.hasOwnProperty(key) && 
+                            typeof actualData[key] === 'object' && 
+                            actualData[key] !== null && 
+                            !Array.isArray(actualData[key]) &&
+                            !(actualData[key] instanceof File) &&
+                            !(actualData[key] instanceof Date)) {
+                            hasNestedObjects = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (hasNestedObjects) {
+                    // Send as JSON to preserve nested structure
+                    ajaxOptions.contentType = 'application/json; charset=utf-8';
+                    ajaxOptions.processData = false;
+                    ajaxOptions.data = JSON.stringify(actualData);
+                } else {
+                    // Send as form data (default jQuery behavior)
+                    ajaxOptions.data = actualData;
+                }
             }
         }
 

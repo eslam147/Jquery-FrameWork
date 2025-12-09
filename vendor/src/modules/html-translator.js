@@ -98,45 +98,7 @@
                 return; // No translation function available
             }
             
-            // First, find all elements with data-original-text and re-process them
-            // This handles language switching by re-processing saved original texts
-            var elementsWithOriginal = document.querySelectorAll('[data-original-text]');
-            for (var idx = 0; idx < elementsWithOriginal.length; idx++) {
-                var el = elementsWithOriginal[idx];
-                var originalText = el.getAttribute('data-original-text');
-                if (originalText && originalText.indexOf('{{') !== -1) {
-                    // Re-process the original text with current locale
-                    var processedText = this.process(originalText);
-                    // Use TreeWalker to find and update all text nodes inside this element
-                    var walker = document.createTreeWalker(
-                        el,
-                        NodeFilter.SHOW_TEXT,
-                        {
-                            acceptNode: function(node) {
-                                var parent = node.parentNode;
-                                if (parent && (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE')) {
-                                    return NodeFilter.FILTER_REJECT;
-                                }
-                                return NodeFilter.FILTER_ACCEPT;
-                            }
-                        },
-                        false
-                    );
-                    var textNode;
-                    var foundTextNode = false;
-                    while (textNode = walker.nextNode()) {
-                        // Update all text nodes with processed text
-                        textNode.textContent = processedText;
-                        foundTextNode = true;
-                    }
-                    // If no text nodes found, update textContent directly
-                    if (!foundTextNode) {
-                        el.textContent = processedText;
-                    }
-                }
-            }
-            
-            // Process all text nodes in the document (for new elements or elements without saved original)
+            // Process all text nodes in the document
             var walker = document.createTreeWalker(
                 document.body,
                 NodeFilter.SHOW_TEXT,
@@ -145,10 +107,6 @@
                         // Skip script and style tags
                         var parent = node.parentNode;
                         if (parent && (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE')) {
-                            return NodeFilter.FILTER_REJECT;
-                        }
-                        // Skip if parent already has data-original-text (already processed above)
-                        if (parent && parent.getAttribute && parent.getAttribute('data-original-text')) {
                             return NodeFilter.FILTER_REJECT;
                         }
                         return NodeFilter.FILTER_ACCEPT;
@@ -167,16 +125,11 @@
             for (var i = 0; i < textNodes.length; i++) {
                 var textNode = textNodes[i];
                 var originalText = textNode.textContent;
-                var parent = textNode.parentNode;
                 
                 // Check if text contains translation directives
                 var hasDirectives = originalText && originalText.indexOf('{{') !== -1 && originalText.indexOf('}}') !== -1;
                 
                 if (hasDirectives) {
-                    // Save original text in parent's data attribute for language switching
-                    if (parent && parent.setAttribute) {
-                        parent.setAttribute('data-original-text', originalText);
-                    }
                     var processedText = this.process(originalText);
                     if (processedText !== originalText) {
                         textNode.textContent = processedText;
@@ -188,20 +141,7 @@
             var titleElement = document.querySelector('title');
             if (titleElement) {
                 var titleText = titleElement.textContent;
-                var hasTitleOriginal = titleElement.getAttribute && titleElement.getAttribute('data-original-text');
-                
-                if (hasTitleOriginal) {
-                    // Re-process saved original title (for language switching)
-                    var savedTitleOriginal = titleElement.getAttribute('data-original-text');
-                    if (savedTitleOriginal && savedTitleOriginal.indexOf('{{') !== -1) {
-                        var processedTitle = this.process(savedTitleOriginal);
-                        titleElement.textContent = processedTitle;
-                    }
-                } else if (titleText && titleText.indexOf('{{') !== -1 && titleText.indexOf('}}') !== -1) {
-                    // Save original title for language switching
-                    if (titleElement.setAttribute) {
-                        titleElement.setAttribute('data-original-text', titleText);
-                    }
+                if (titleText && titleText.indexOf('{{') !== -1 && titleText.indexOf('}}') !== -1) {
                     var processedTitle = this.process(titleText);
                     if (processedTitle !== titleText) {
                         titleElement.textContent = processedTitle;
@@ -286,26 +226,13 @@
         for (var i = 0; i < textNodes.length; i++) {
             var textNode = textNodes[i];
             var originalText = textNode.textContent;
-            var parent = textNode.parentNode;
             
-            // Check if text contains translation directives OR has saved original
+            // Check if text contains translation directives
             var hasDirectives = originalText && originalText.indexOf('{{') !== -1 && originalText.indexOf('}}') !== -1;
-            var hasSavedOriginal = parent && parent.getAttribute && parent.getAttribute('data-original-text');
             
             if (hasDirectives) {
-                // Save original text in parent's data attribute for language switching
-                if (parent && parent.setAttribute) {
-                    parent.setAttribute('data-original-text', originalText);
-                }
                 var processedText = HTMLTranslator.process(originalText);
                 if (processedText !== originalText) {
-                    textNode.textContent = processedText;
-                }
-            } else if (hasSavedOriginal) {
-                // Re-process saved original text (for language switching)
-                var savedOriginal = parent.getAttribute('data-original-text');
-                if (savedOriginal && savedOriginal.indexOf('{{') !== -1) {
-                    var processedText = HTMLTranslator.process(savedOriginal);
                     textNode.textContent = processedText;
                 }
             }

@@ -322,39 +322,77 @@
                                     files = $form.fw('form').getFiles();
                                 }
                                 
-                                // Create request object starting with data attributes
-                                // Data attributes are always included, form data is added if exists
-                                var requestObj = {};
-                                
-                                // First, add form data if exists
-                                for (var key in formData) {
-                                    if (formData.hasOwnProperty(key)) {
-                                        requestObj[key] = formData[key];
+                                // Create request object starting with data attributes (preserve nested structure)
+                                // Deep merge function to preserve nested objects
+                                var deepMerge = function(target, source) {
+                                    for (var key in source) {
+                                        if (source.hasOwnProperty(key)) {
+                                            // If both are objects and not arrays, merge recursively
+                                            if (typeof source[key] === 'object' && 
+                                                source[key] !== null && 
+                                                !Array.isArray(source[key]) &&
+                                                typeof target[key] === 'object' && 
+                                                target[key] !== null && 
+                                                !Array.isArray(target[key])) {
+                                                deepMerge(target[key], source[key]);
+                                            } else {
+                                                // Otherwise, source takes precedence
+                                                target[key] = source[key];
+                                            }
+                                        }
                                     }
-                                }
+                                    return target;
+                                };
                                 
-                                // Then, merge data attributes (data attributes take precedence over form data)
+                                // Start with data attributes (which already have nested structure)
+                                var requestObj = {};
                                 for (var key in dataAttributes) {
                                     if (dataAttributes.hasOwnProperty(key)) {
                                         requestObj[key] = dataAttributes[key];
                                     }
                                 }
                                 
-                                // Add all() method
+                                // Then, deep merge form data (form data merges into existing structure)
+                                if (formData && Object.keys(formData).length > 0) {
+                                    deepMerge(requestObj, formData);
+                                }
+                                
+                                // Add all() method with deep copy to preserve nested structure
                                 requestObj.all = function() {
+                                    // Deep copy function to preserve nested objects
+                                    var deepCopy = function(obj) {
+                                        if (obj === null || typeof obj !== 'object') {
+                                            return obj;
+                                        }
+                                        if (obj instanceof Date) {
+                                            return new Date(obj.getTime());
+                                        }
+                                        if (Array.isArray(obj)) {
+                                            return obj.map(deepCopy);
+                                        }
+                                        var copy = {};
+                                        for (var key in obj) {
+                                            if (obj.hasOwnProperty(key)) {
+                                                copy[key] = deepCopy(obj[key]);
+                                            }
+                                        }
+                                        return copy;
+                                    };
+                                    
                                     var data = {};
                                     for (var k in this) {
                                         if (this.hasOwnProperty(k) && 
                                             k !== '_files' &&
                                             typeof this[k] !== 'function') {
-                                            data[k] = this[k];
+                                            // Use deep copy to preserve nested structure
+                                            data[k] = deepCopy(this[k]);
                                         }
                                     }
                                     // Include files if they exist
                                     if (this._files && Object.keys(this._files).length > 0) {
                                         for (var fileKey in this._files) {
                                             if (this._files.hasOwnProperty(fileKey)) {
-                                                data[fileKey] = this._files[fileKey];
+                                                data[fileKey] = deepCopy(this._files[fileKey]);
                                             }
                                         }
                                     }
@@ -672,38 +710,77 @@
                                             }
                                         }
                                         
-                                        // Create request object starting with data attributes
-                                        requestObjForRoute = {};
-                                        
-                                        // First, add form data if exists
-                                        for (var key in formData) {
-                                            if (formData.hasOwnProperty(key)) {
-                                                requestObjForRoute[key] = formData[key];
+                                        // Create request object starting with data attributes (preserve nested structure)
+                                        // Deep merge function to preserve nested objects
+                                        var deepMerge = function(target, source) {
+                                            for (var key in source) {
+                                                if (source.hasOwnProperty(key)) {
+                                                    // If both are objects and not arrays, merge recursively
+                                                    if (typeof source[key] === 'object' && 
+                                                        source[key] !== null && 
+                                                        !Array.isArray(source[key]) &&
+                                                        typeof target[key] === 'object' && 
+                                                        target[key] !== null && 
+                                                        !Array.isArray(target[key])) {
+                                                        deepMerge(target[key], source[key]);
+                                                    } else {
+                                                        // Otherwise, source takes precedence
+                                                        target[key] = source[key];
+                                                    }
+                                                }
                                             }
-                                        }
+                                            return target;
+                                        };
                                         
-                                        // Then, merge data attributes (data attributes take precedence over form data)
+                                        // Start with data attributes (which already have nested structure)
+                                        requestObjForRoute = {};
                                         for (var key in dataAttributes) {
                                             if (dataAttributes.hasOwnProperty(key)) {
                                                 requestObjForRoute[key] = dataAttributes[key];
                                             }
                                         }
                                         
-                                        // Add all() method
+                                        // Then, deep merge form data (form data merges into existing structure)
+                                        if (formData && Object.keys(formData).length > 0) {
+                                            deepMerge(requestObjForRoute, formData);
+                                        }
+                                        
+                                        // Add all() method with deep copy to preserve nested structure
                                         requestObjForRoute.all = function() {
+                                            // Deep copy function to preserve nested objects
+                                            var deepCopy = function(obj) {
+                                                if (obj === null || typeof obj !== 'object') {
+                                                    return obj;
+                                                }
+                                                if (obj instanceof Date) {
+                                                    return new Date(obj.getTime());
+                                                }
+                                                if (Array.isArray(obj)) {
+                                                    return obj.map(deepCopy);
+                                                }
+                                                var copy = {};
+                                                for (var key in obj) {
+                                                    if (obj.hasOwnProperty(key)) {
+                                                        copy[key] = deepCopy(obj[key]);
+                                                    }
+                                                }
+                                                return copy;
+                                            };
+                                            
                                             var allData = {};
                                             for (var k in this) {
                                                 if (this.hasOwnProperty(k) && 
                                                     k !== '_files' &&
                                                     typeof this[k] !== 'function') {
-                                                    allData[k] = this[k];
+                                                    // Use deep copy to preserve nested structure
+                                                    allData[k] = deepCopy(this[k]);
                                                 }
                                             }
                                             // Include files if they exist
                                             if (this._files && Object.keys(this._files).length > 0) {
                                                 for (var fileKey in this._files) {
                                                     if (this._files.hasOwnProperty(fileKey)) {
-                                                        allData[fileKey] = this._files[fileKey];
+                                                        allData[fileKey] = deepCopy(this._files[fileKey]);
                                                     }
                                                 }
                                             }
