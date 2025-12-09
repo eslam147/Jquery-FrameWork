@@ -1,0 +1,25 @@
+{
+  "env": {
+    "browser": true,
+    "es2022": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module"
+  },
+  "rules": {
+    "no-unused-vars": "off",
+    "no-undef": "off"
+  },
+  "globals": {
+    "FormRequest": "readonly",
+    "trans": "readonly",
+    "__": "readonly",
+    "lang": "readonly",
+    "Framework": "readonly",
+    "window": "readonly",
+    "document": "readonly",
+    "$": "readonly"
+  }
+}
+

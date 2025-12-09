@@ -1,0 +1,31 @@
+# Test version - simpler approach
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # If file exists, serve it
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+    
+    # If directory exists, serve it
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+    
+    # Allow access to app, resources, artisan
+    RewriteCond %{REQUEST_URI} ^/?(app|resources|artisan|node_modules|vendor)/ [NC]
+    RewriteRule ^ - [L]
+    
+    # Root directory -> index.html
+    RewriteCond %{REQUEST_URI} ^/?$
+    RewriteRule ^$ resources/views/index.html [L]
+    
+    # Clean URLs: if no extension, try to find .html in resources/views
+    # Match pattern: /test/example or /example
+    RewriteCond %{REQUEST_URI} !\.(html|php|js|css|jpg|jpeg|png|gif|svg|ico|json|xml|txt|woff|woff2|ttf|eot|pdf|zip|map)$ [NC]
+    RewriteCond %{REQUEST_URI} !^/?(app|resources|artisan|node_modules|vendor)/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    
+    # Try to match and rewrite
+    RewriteRule ^(?:test/)?([^/]+)/?$ resources/views/$1.html [L]
+</IfModule>
+

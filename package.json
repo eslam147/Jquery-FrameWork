@@ -1,0 +1,21 @@
+{
+  "name": "jquery-framework",
+  "version": "1.0.0",
+  "description": "إطار عمل مبني على jQuery لتسهيل المهام الشائعة في تطوير الويب",
+  "main": "vendor/src/core/framework.js",
+  "scripts": {
+    "build": "node build.js",
+    "artisanJs": "node artisanJs"
+  },
+  "keywords": [
+    "jquery",
+    "framework",
+    "javascript",
+    "arabic"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {}
+}
+

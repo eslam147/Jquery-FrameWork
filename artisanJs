@@ -1,0 +1,142 @@
+#!/usr/bin/env node
+
+/**
+ * ArtisanJs CLI - Command System
+ * Usage: node artisanJs make:request Auth/LoginRequest
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+// Colors for console
+const colors = {
+    reset: '\x1b[0m',
+    green: '\x1b[32m',
+    red: '\x1b[31m',
+    yellow: '\x1b[33m',
+    blue: '\x1b[34m',
+    cyan: '\x1b[36m'
+};
+
+class ArtisanJs {
+    constructor() {
+        this.commands = {};
+        this.registerCommands();
+    }
+
+    /**
+     * Register commands
+     */
+    registerCommands() {
+        // make:request command
+        this.commands['make:request'] = require('./vendor/src/console/commands/MakeRequestCommand');
+        
+        // make:controller command
+        this.commands['make:controller'] = require('./vendor/src/console/commands/MakeControllerCommand');
+        
+        // make:view command
+        this.commands['make:view'] = require('./vendor/src/console/commands/MakeViewCommand');
+    }
+
+    /**
+     * Execute command
+     */
+    run(args) {
+        if (args.length < 1) {
+            this.showHelp();
+            return;
+        }
+
+        const command = args[0].toLowerCase(); // Make command case-insensitive
+        const commandArgs = args.slice(1);
+
+        // Find command (case-insensitive)
+        let commandKey = null;
+        for (const key in this.commands) {
+            if (key.toLowerCase() === command) {
+                commandKey = key;
+                break;
+            }
+        }
+
+        if (!commandKey || !this.commands[commandKey]) {
+            console.error(colors.red + 'Command not found: ' + args[0] + colors.reset);
+            console.log(colors.yellow + 'Use: node artisanJs --help to see available commands' + colors.reset);
+            return;
+        }
+
+        try {
+            const commandInstance = new this.commands[commandKey]();
+            commandInstance.handle(commandArgs);
+        } catch (error) {
+            console.error(colors.red + 'Error: ' + error.message + colors.reset);
+            if (process.env.DEBUG) {
+                console.error(error.stack);
+            }
+        }
+    }
+
+    /**
+     * Show help
+     */
+    showHelp() {
+        console.log(colors.cyan + '\n🚀 jQuery Framework ArtisanJs\n' + colors.reset);
+        console.log(colors.yellow + 'Available commands:\n' + colors.reset);
+        
+        console.log(colors.green + '  make:request <Name>' + colors.reset);
+        console.log('    Create a new Request class');
+        console.log('    Example: node artisanJs make:request Auth/LoginRequest\n');
+        
+        console.log(colors.green + '  make:controller <Name>' + colors.reset);
+        console.log('    Create a new Controller class');
+        console.log('    Example: node artisanJs make:controller ButtonController\n');
+        
+        console.log(colors.green + '  --help' + colors.reset);
+        console.log('    Show this message\n');
+    }
+
+    /**
+     * Print success message
+     */
+    static success(message) {
+        console.log(colors.green + '✅ ' + message + colors.reset);
+    }
+
+    /**
+     * Print error message
+     */
+    static error(message) {
+        console.log(colors.red + '❌ ' + message + colors.reset);
+    }
+
+    /**
+     * Print info message
+     */
+    static info(message) {
+        console.log(colors.blue + 'ℹ️  ' + message + colors.reset);
+    }
+
+    /**
+     * Print warning message
+     */
+    static warning(message) {
+        console.log(colors.yellow + '⚠️  ' + message + colors.reset);
+    }
+}
+
+// Execute command
+let args = process.argv.slice(2);
+
+// Ignore 'artisanJs' or 'artisanJs.js' if it's the first argument
+if (args.length > 0 && (args[0] === 'artisanJs' || args[0] === 'artisanJs.js')) {
+    args = args.slice(1);
+}
+
+if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
+    new ArtisanJs().showHelp();
+} else {
+    new ArtisanJs().run(args);
+}
+
+// Export for use in other commands
+module.exports = ArtisanJs;

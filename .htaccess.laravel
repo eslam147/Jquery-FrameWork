@@ -1,0 +1,83 @@
+# jQuery Framework - Laravel Compatible Configuration
+# This file is designed to work alongside Laravel's .htaccess in public/ directory
+# 
+# Usage: If integrating with Laravel, place this framework in a subdirectory
+#        or merge the rules with Laravel's .htaccess in public/
+
+# Disable directory listing
+Options -Indexes
+
+# Set default directory index (only if not in Laravel public directory)
+# DirectoryIndex resources/views/index.html
+
+# Enable Rewrite Engine
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Laravel compatibility: Skip if request is for Laravel routes (API, admin, etc.)
+    # Adjust these patterns based on your Laravel route prefixes
+    RewriteCond %{REQUEST_URI} ^/(api|admin|auth|login|register|password)/ [NC,OR]
+    RewriteCond %{REQUEST_URI} \.(php)$ [NC]
+    RewriteRule ^ - [L]
+    
+    # If accessing root directory and not a Laravel route, serve framework index
+    RewriteCond %{REQUEST_URI} ^/?$
+    RewriteCond %{REQUEST_URI} !^/(api|admin|auth)/
+    RewriteRule ^$ resources/views/index.html [L]
+    
+    # Allow direct access to framework directories (stop processing)
+    RewriteCond %{REQUEST_URI} ^/?(app|resources|artisan|node_modules|vendor)/ [NC]
+    RewriteRule ^ - [L]
+    
+    # If file exists, serve it directly (stop processing)
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+    
+    # If directory exists, allow Apache to handle it
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+    
+    # If requesting HTML file, try to serve from resources/views
+    RewriteCond %{REQUEST_URI} \.html$ [NC]
+    RewriteCond %{REQUEST_URI} !^/?(resources/views|app|artisan|public)/
+    RewriteRule ^([^/]+\.html)$ resources/views/$1 [L]
+    
+    # For any other request that doesn't exist, try to serve from resources/views
+    # But skip if it looks like a Laravel route
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} !^/?(app|resources|artisan|node_modules|vendor|public|api|admin)/
+    RewriteCond %{REQUEST_URI} !\.(php|json|xml)$ [NC]
+    RewriteRule ^(.*)$ resources/views/$1 [L]
+    
+    # Block access to hidden files (except .htaccess)
+    RewriteRule ^\.(?!htaccess) - [F,L]
+</IfModule>
+
+# Security Headers
+<IfModule mod_headers.c>
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>
+
+# Cache Control
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType text/javascript "access plus 1 month"
+    ExpiresByType text/html "access plus 1 hour"
+</IfModule>
+
+# Compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+AddDefaultCharset UTF-8
+

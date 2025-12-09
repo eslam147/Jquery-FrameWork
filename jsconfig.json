@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["ES2022", "DOM"],
+    "checkJs": false,
+    "allowJs": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true
+  },
+  "include": [
+    "app/**/*",
+    "resources/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "vendor"
+  ],
+  "typeAcquisition": {
+    "enable": false
+  }
+}
+

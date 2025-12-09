@@ -1,0 +1,119 @@
+# jQuery Framework - Apache Configuration
+# 
+# LARAVEL INTEGRATION NOTES:
+# ==========================
+# If integrating with Laravel, you have several options:
+# 
+# 1. Use this framework in a subdirectory (e.g., /framework/)
+# 2. Merge rules with Laravel's public/.htaccess (see INTEGRATION_LARAVEL.md)
+# 3. Use .htaccess.laravel file which has Laravel-compatible rules
+# 
+# IMPORTANT: Laravel uses 'app/', 'resources/', 'vendor/' directories too!
+# Solution: Use prefixes or subdirectories to avoid conflicts.
+
+# Disable directory listing
+Options -Indexes
+
+# Set default directory index
+DirectoryIndex resources/views/index.html
+
+# Enable Rewrite Engine
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # LARAVEL COMPATIBILITY: Skip Laravel routes (uncomment if integrating)
+    # RewriteCond %{REQUEST_URI} ^/(api|admin|auth|login|register|password)/ [NC,OR]
+    # RewriteCond %{REQUEST_URI} \.(php)$ [NC]
+    # RewriteRule ^ - [L]
+    
+    # If accessing root directory (empty or just slash), serve index.html
+    RewriteCond %{REQUEST_URI} ^/?$
+    RewriteRule ^$ resources/views/index.html [L]
+    
+    # Allow direct access to app, resources, artisan directories (stop processing)
+    # NOTE: In Laravel, these directories exist too - use subdirectory approach
+    RewriteCond %{REQUEST_URI} ^/?(app|resources|artisan|node_modules|vendor)/ [NC]
+    RewriteRule ^ - [L]
+    
+    # If file exists, serve it directly (stop processing)
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+    
+    # If directory exists, allow Apache to handle it (for directory listing prevention)
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+    
+    # Clean URLs: Remove .html extension from URLs
+    # If request has no extension and is not a file/directory, try resources/views
+    RewriteCond %{REQUEST_URI} !\.(html|php|js|css|jpg|jpeg|png|gif|svg|ico|json|xml|txt|woff|woff2|ttf|eot|pdf|zip|map)$ [NC]
+    RewriteCond %{REQUEST_URI} !^/?(app|resources|artisan|node_modules|vendor)/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    # Rewrite to resources/views with .html extension
+    # This will work for both /test/example and /example
+    RewriteRule ^(?:test/)?([^/]+)/?$ resources/views/$1.html [L]
+    
+    # For any other request that doesn't exist, try to serve from resources/views
+    # LARAVEL COMPATIBILITY: Skip PHP and Laravel routes (uncomment if integrating)
+    # RewriteCond %{REQUEST_URI} !\.(php|json|xml)$ [NC]
+    # RewriteCond %{REQUEST_URI} !^/?(api|admin|auth)/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} !^/?(app|resources|artisan|node_modules|vendor)/
+    RewriteRule ^(.*)$ resources/views/$1 [L]
+    
+    # Block access to hidden files (except .htaccess)
+    RewriteRule ^\.(?!htaccess) - [F,L]
+</IfModule>
+
+# Security Headers
+<IfModule mod_headers.c>
+    # Prevent clickjacking
+    Header set X-Frame-Options "SAMEORIGIN"
+    
+    # XSS Protection
+    Header set X-XSS-Protection "1; mode=block"
+    
+    # Prevent MIME type sniffing
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>
+
+# Enable CORS for API requests (if needed)
+<IfModule mod_headers.c>
+    # Allow CORS for specific origins (adjust as needed)
+    # Header set Access-Control-Allow-Origin "*"
+    # Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    # Header set Access-Control-Allow-Headers "Content-Type, Authorization"
+</IfModule>
+
+# Cache Control
+<IfModule mod_expires.c>
+    ExpiresActive On
+    
+    # Cache images for 1 year
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    
+    # Cache CSS and JavaScript for 1 month
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType text/javascript "access plus 1 month"
+    
+    # Cache HTML for 1 hour
+    ExpiresByType text/html "access plus 1 hour"
+</IfModule>
+
+# Compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# Default charset
+AddDefaultCharset UTF-8
+
+# Error pages (optional)
+# ErrorDocument 404 /resources/views/404.html
+# ErrorDocument 500 /resources/views/500.html
+
