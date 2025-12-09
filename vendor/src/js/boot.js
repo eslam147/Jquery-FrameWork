@@ -30,6 +30,11 @@
         'https://code.jquery.com/jquery-3.6.0.min.js',
         // Core (in vendor/src/core, relative to app/)
         '../vendor/src/core/framework.js',
+        '../vendor/src/core/cache.js',
+        '../vendor/src/core/logger.js',
+        '../vendor/src/core/performance.js',
+        '../vendor/src/core/lazy-loader.js',
+        '../vendor/src/core/cleanup.js',
         '../vendor/src/core/view.js',
         '../vendor/src/core/loader.js',
         '../vendor/src/core/requests.js',
@@ -40,6 +45,8 @@
         '../vendor/src/modules/form.js',
         '../vendor/src/modules/events.js',
         '../vendor/src/modules/validation.js',
+        '../vendor/src/modules/response.js',
+        '../vendor/src/modules/route.js',
         '../vendor/src/modules/ajax.js',
         '../vendor/src/modules/storage.js',
         '../vendor/src/modules/utils.js',
@@ -58,6 +65,11 @@
         '../vendor/src/controllers/Controller.js',
         'Http/controllers/ButtonController.js',
         'Http/controllers/FormController.js',
+        'Http/controllers/AjaxGetController.js',
+        'Http/controllers/AjaxPostController.js',
+        'Http/controllers/LanguageController.js',
+        // Routes (must load after controllers)
+        '../routes/web.js',
         // Start (in vendor/src/js, relative to app/)
         '../vendor/src/js/start.js'
     ];
@@ -65,9 +77,30 @@
     /**
      * Preprocess Laravel-like syntax
      * Converts: public function, protected function, private function
+     * Converts: Ajax::method() to Ajax.method()
      * Auto-registers classes to Framework
      */
     function preprocessCode(code, filePath) {
+        // Convert ::class to Framework.ClassName (Laravel-like class reference)
+        // Match patterns like: ControllerName::class
+        // Examples: AjaxGetController::class → Framework.AjaxGetController
+        // But only if it's in an array context like [ControllerName::class, 'method']
+        // First, handle array context: [ControllerName::class, 'method'] → [Framework.ControllerName, 'method']
+        code = code.replace(/\[\s*(\w+)::class\s*,/g, '[Framework.$1,');
+        // Then handle standalone: ControllerName::class → Framework.ControllerName
+        code = code.replace(/(\w+)::class/g, 'Framework.$1');
+        
+        // Convert -> to . (Laravel-like object property access)
+        // Match patterns like: response->data, response->response, etc.
+        // Examples: response->data → response.data, response->response → response.response
+        code = code.replace(/(\w+)->(\w+)/g, '$1.$2');
+        
+        // Convert :: to . (Laravel-like static method calls)
+        // Match patterns like: Ajax::get, Framework.Ajax::get, Route::get, etc.
+        // This regex matches: identifier(s)::methodName(
+        // Examples: Ajax::get(, Framework.Ajax::post(, Route::get(
+        code = code.replace(/(\w+(?:\.\w+)*)::(\w+)\s*\(/g, '$1.$2(');
+        
         // Check if this is a translation file (lang folder)
         var isTranslationFile = filePath.indexOf('/lang/') !== -1 || filePath.indexOf('\\lang\\') !== -1;
         if (isTranslationFile) {
@@ -247,10 +280,28 @@
         var needsPreprocess = !isAbsoluteUrl && (
             src.indexOf('Http/') !== -1 || 
             src.indexOf('app/') !== -1 || 
-            src.indexOf('lang/') !== -1
+            src.indexOf('lang/') !== -1 ||
+            src.indexOf('routes/') !== -1
         );
         
         if (needsPreprocess) {
+            // Check cache first (if available)
+            var cachedCode = null;
+            if (typeof Framework !== 'undefined' && Framework.cache) {
+                cachedCode = Framework.cache.get(fullPath, 'code');
+            }
+            
+            if (cachedCode) {
+                // Use cached code
+                var script = document.createElement('script');
+                script.textContent = cachedCode;
+                script.async = false;
+                script.defer = false;
+                document.head.appendChild(script);
+                if (callback) callback();
+                return;
+            }
+            
             // Load file content, preprocess, then execute
             fetch(fullPath)
                 .then(function(response) {
@@ -262,6 +313,11 @@
                 .then(function(code) {
                     // Preprocess code
                     var processedCode = preprocessCode(code, fullPath);
+                    
+                    // Cache processed code (if cache available)
+                    if (typeof Framework !== 'undefined' && Framework.cache) {
+                        Framework.cache.set(fullPath, processedCode, 'code');
+                    }
                     
                     // Execute processed code
                     var script = document.createElement('script');

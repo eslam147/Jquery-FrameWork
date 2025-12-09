@@ -1,0 +1,29 @@
+@if(success)
+<div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px; padding: 15px;">
+    <h4 style="margin-top: 0; color: #155724;">✓ {{ __('messages.success') }}</h4>
+    @if(data.title)
+    <p><strong>{{ __('messages.title') }}</strong> {{ data.title }}</p>
+    @endif
+    @if(data.body)
+    <p><strong>{{ __('messages.body') }}</strong> {{ data.body }}</p>
+    @endif
+    @if(data.userId)
+    <p><strong>{{ __('messages.user_id') }}</strong> {{ data.userId }}</p>
+    @endif
+    @if(data.id)
+    <p><strong>{{ __('messages.post_id') }}</strong> {{ data.id }}</p>
+    @endif
+    @if(data.message)
+    <p><strong>{{ __('messages.message') }}</strong> {{ data.message }}</p>
+    @endif
+    @if(data)
+    <div style="margin-top: 10px;"><strong>{{ __('messages.data') }}</strong><pre style="background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; font-size: 12px;">{!! data !!}</pre></div>
+    @endif
+</div>
+@else
+<div style="background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 5px; padding: 15px;">
+    <h4 style="margin-top: 0; color: #721c24;">✗ {{ __('messages.error') }}</h4>
+    <p style="color: #721c24;">{{ error }}</p>
+</div>
+@endif
+

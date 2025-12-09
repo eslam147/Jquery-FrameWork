@@ -1,21 +1,27 @@
 {
   "name": "jquery-framework",
   "version": "1.0.0",
-  "description": "إطار عمل مبني على jQuery لتسهيل المهام الشائعة في تطوير الويب",
-  "main": "vendor/src/core/framework.js",
+  "description": "jQuery-like Laravel Framework for large projects",
+  "main": "vendor/src/js/boot.js",
   "scripts": {
-    "build": "node build.js",
-    "artisanJs": "node artisanJs"
+    "dev": "webpack --mode development --watch",
+    "build": "webpack --mode production",
+    "build:analyze": "webpack-bundle-analyzer public/build/stats.json"
   },
   "keywords": [
     "jquery",
     "framework",
-    "javascript",
-    "arabic"
+    "laravel",
+    "mvc"
   ],
   "author": "",
   "license": "MIT",
-  "dependencies": {},
-  "devDependencies": {}
+  "devDependencies": {
+    "@babel/core": "^7.23.0",
+    "@babel/preset-env": "^7.23.0",
+    "babel-loader": "^9.1.3",
+    "webpack": "^5.89.0",
+    "webpack-bundle-analyzer": "^4.9.0",
+    "webpack-cli": "^5.1.4"
+  }
 }
-

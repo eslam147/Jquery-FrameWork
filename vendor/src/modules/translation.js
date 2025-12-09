@@ -11,12 +11,12 @@
         /**
          * Current locale
          */
-        locale: 'en', // Default locale (English)
+        locale: window.Framework.cookie.get('locale') ?? 'en', // Default locale (English)
 
         /**
          * Fallback locale
          */
-        fallbackLocale: 'en',
+        fallbackLocale: window.Framework.cookie.get('locale') ?? 'en',
 
         /**
          * Translations cache

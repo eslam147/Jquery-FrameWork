@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ trans('messages.framework_title') }} - {{ trans('messages.examples') }} {{ trans('messages.version') }}</title>
+    <title>{{ __('messages.framework_title') }} - {{ __('messages.examples') }} {{ __('messages.version') }}</title>
     <style id="html-translator-hide-style">
         /* Hide body until translation is processed */
         body { visibility: hidden !important; opacity: 0 !important; }
@@ -75,6 +75,12 @@
             background: #0056b3;
         }
         
+        .language-switcher.active {
+            background: #ffc107 !important;
+            color: #000 !important;
+            font-weight: bold;
+        }
+        
         input, textarea, select {
             width: 100%;
             padding: 10px;
@@ -122,24 +128,43 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🚀 {{ trans('messages.framework_title') }} - {{ trans('messages.examples') }} {{ trans('messages.version') }}</h1>
-        <div class="section">
-            <div class="demo-box">
-                <button class="btn">{{ trans('messages.click_here') }}</button>
-                <button class="btn">{{ trans('messages.another_button') }}</button>
+    <div class="container" data-id="10" data-product-id="100" name="test3">
+        <!-- Language Switcher -->
+        <div style="text-align: right; margin-bottom: 20px;">
+            <button class="language-switcher btn" data-locale="ar" style="background: #28a745; margin-left: 10px;">العربية</button>
+            <button class="language-switcher btn" data-locale="en" style="background: #007bff;">English</button>
+        </div>
+        <h1>🚀 {{ __('messages.framework_title') }} - {{ __('messages.examples') }} {{ __('messages.version') }}</h1>
+        <div class="section" data-id="7" data-product-id="70" name="test2">
+            <div class="demo-box" data-id="5" data-product-id="50" name="test">
+                <button data-id="1" data-variation-id="10" class="btn jqfw-btn">{{ __('messages.click_here') }}</button>
+                <button data-id="2" data-variation-id="20" class="btn jqfw-btn">{{ __('messages.another_button') }}</button>
             </div>
             <div class="result d-none" id="controller-result"></div>
         </div>
         <div class="section">
-            <h2>2. {{ trans('messages.forms') }}</h2>            
+            <h2>2. {{ __('messages.forms') }}</h2>            
             <form id="demo-form" enctype="multipart/form-data">
-                <input type="text" name="name" placeholder="{{ trans('messages.name') }}">
-                <input type="email" name="email" placeholder="{{ trans('messages.email') }}">
-                <input type="file" name="avatar" accept="image/*" style="margin: 10px 0;">
-                <button type="submit">{{ trans('messages.submit') }}</button>
+                <input type="text" name="name" placeholder="{{ __('messages.name') }}">
+                <input type="email" name="email" placeholder="{{ __('messages.email') }}">
+                <button type="submit">{{ __('messages.submit') }}</button>
             </form>
             <div class="result d-none" id="form-result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>3. {{ __('messages.ajax_examples_route_system') }}</h2>
+            <div class="info">
+                <p><strong>{{ __('messages.example_laravel_syntax') }}</strong> <code>Ajax::get(url, elementReturn)</code></p>
+                <p>{{ __('messages.click_buttons_test_ajax') }}</p>
+            </div>
+            <div class="demo-box">
+                <button class="btn" id="ajax-get-btn" style="background: #28a745;">{{ __('messages.test_get_request') }}</button>
+                <button class="btn" id="ajax-post-btn" style="background: #17a2b8;">{{ __('messages.test_post_request') }}</button>
+            </div>
+            <div class="result" id="ajax-result" style="min-height: 50px; padding: 15px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; margin-top: 15px;">
+                <p style="color: #6c757d; margin: 0;">{{ __('messages.ajax_results_will_appear') }}</p>
+            </div>
         </div>
     </div>
     <!-- Framework - Load boot.js -->

@@ -31,6 +31,24 @@ return {
     form_sent_successfully: 'تم إرسال النموذج بنجاح!',
     sent_data: 'البيانات المرسلة:',
     button_clicked: 'تم الضغط على الزر: :button',
-    version: 'v0.1'
+    ajax_examples_route_system: 'أمثلة AJAX (نظام التوجيه)',
+    example_laravel_syntax: 'مثال باستخدام Laravel-like syntax:',
+    click_buttons_test_ajax: 'اضغط على الأزرار أدناه لاختبار طلبات AJAX. ستظهر النتائج تلقائياً في صندوق النتائج.',
+    test_get_request: 'اختبار طلب GET',
+    test_post_request: 'اختبار طلب POST',
+    test_local_request: 'اختبار طلب محلي',
+    ajax_results_will_appear: 'ستظهر نتائج AJAX هنا...',
+    success: 'نجح!',
+    error: 'خطأ',
+    title: 'العنوان:',
+    body: 'المحتوى:',
+    user_id: 'معرف المستخدم:',
+    post_id: 'معرف المنشور:',
+    message: 'الرسالة:',
+    data: 'البيانات:',
+    loading: 'جاري التحميل...',
+    version: 'v0.1',
+    switch_language: 'تبديل اللغة',
+    language: 'اللغة'
 }
 

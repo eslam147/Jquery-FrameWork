@@ -20,7 +20,7 @@ class ButtonController extends Controller {
      * Selector for elements this controller handles
      */
     public function selector() {
-        return '.btn';
+        return '.jqfw-btn';
     }
 
     /**
@@ -33,13 +33,18 @@ class ButtonController extends Controller {
      * Handle click event
      * Note: e.preventDefault() is called automatically by Controller
      */
-    public function onClick(e) {
+    public function onClick(e, request) {
+        // Test parameters from data attributes
+        console.log('all:', request->all());
+        console.log('id:', request->id);
+        console.log('variation_id:', request->variation_id);
+        
         // Your click handler code here
         var $target = $(e.currentTarget);
+        var buttonText = $target.text();
         
         // Example: Show result
         if ($('#controller-result').length) {
-            var buttonText = $target.text();
             var message = trans('messages.button_clicked', {button: buttonText});
             $('#controller-result').html(message).show();
         }

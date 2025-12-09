@@ -1,6 +1,8 @@
 /**
  * HTML Translator Module - Process translation directives in HTML
- * Supports: {{ trans('key') }}, {{ __('key') }}, {{ @lang('key') }}
+ * Supports: 
+ * - {{ trans('key') }}, {{ __('key') }}, {{ @lang('key') }}
+ * - @lang('key') without {{ }} brackets (Laravel Blade syntax)
  */
 
 (function(Framework) {
@@ -12,7 +14,7 @@
          * @param {string} html - HTML content
          * @returns {string} - Processed HTML with translations
          */
-        process: function(html) {
+        process: function(html, saveOriginal) {
             if (!html || typeof html !== 'string') {
                 return html;
             }
@@ -23,13 +25,20 @@
             if (!transFunc) {
                 return html; // No translation function available
             }
+            
+            // Save original text if requested (for language switching)
+            var originalText = saveOriginal ? html : null;
 
-            // Pattern to match: {{ trans('key') }}, {{ __('key') }}, {{ @lang('key') }}, {{ trans('key', {param: 'value'}) }}
+            // Pattern to match: 
+            // 1. {{ trans('key') }}, {{ __('key') }}, {{ @lang('key') }}, {{ trans('key', {param: 'value'}) }}
+            // 2. @lang('key') without {{ }} brackets
             // Supports single quotes, double quotes, and optional parameters
             // More robust pattern that handles nested quotes and objects
-            var pattern = /\{\{\s*(trans|__|@lang|lang)\s*\(\s*['"]([^'"]+)['"]\s*(?:,\s*(\{[^}]*\}))?\s*\)\s*\}\}/g;
+            var pattern = /(?:\{\{\s*)?(@lang|trans|__|lang)\s*\(\s*['"]([^'"]+)['"]\s*(?:,\s*(\{[^}]*\}))?\s*\)\s*(?:\}\})?/g;
             
             var processedHtml = html.replace(pattern, function(match, funcName, key, paramsStr) {
+                // Handle @lang without {{ }} brackets
+                var isAtLang = funcName === '@lang' && !match.includes('{{');
                 try {
                     var params = {};
                     if (paramsStr && paramsStr.trim()) {
@@ -89,7 +98,45 @@
                 return; // No translation function available
             }
             
-            // Process all text nodes in the document
+            // First, find all elements with data-original-text and re-process them
+            // This handles language switching by re-processing saved original texts
+            var elementsWithOriginal = document.querySelectorAll('[data-original-text]');
+            for (var idx = 0; idx < elementsWithOriginal.length; idx++) {
+                var el = elementsWithOriginal[idx];
+                var originalText = el.getAttribute('data-original-text');
+                if (originalText && originalText.indexOf('{{') !== -1) {
+                    // Re-process the original text with current locale
+                    var processedText = this.process(originalText);
+                    // Use TreeWalker to find and update all text nodes inside this element
+                    var walker = document.createTreeWalker(
+                        el,
+                        NodeFilter.SHOW_TEXT,
+                        {
+                            acceptNode: function(node) {
+                                var parent = node.parentNode;
+                                if (parent && (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE')) {
+                                    return NodeFilter.FILTER_REJECT;
+                                }
+                                return NodeFilter.FILTER_ACCEPT;
+                            }
+                        },
+                        false
+                    );
+                    var textNode;
+                    var foundTextNode = false;
+                    while (textNode = walker.nextNode()) {
+                        // Update all text nodes with processed text
+                        textNode.textContent = processedText;
+                        foundTextNode = true;
+                    }
+                    // If no text nodes found, update textContent directly
+                    if (!foundTextNode) {
+                        el.textContent = processedText;
+                    }
+                }
+            }
+            
+            // Process all text nodes in the document (for new elements or elements without saved original)
             var walker = document.createTreeWalker(
                 document.body,
                 NodeFilter.SHOW_TEXT,
@@ -98,6 +145,10 @@
                         // Skip script and style tags
                         var parent = node.parentNode;
                         if (parent && (parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE')) {
+                            return NodeFilter.FILTER_REJECT;
+                        }
+                        // Skip if parent already has data-original-text (already processed above)
+                        if (parent && parent.getAttribute && parent.getAttribute('data-original-text')) {
                             return NodeFilter.FILTER_REJECT;
                         }
                         return NodeFilter.FILTER_ACCEPT;
@@ -116,9 +167,16 @@
             for (var i = 0; i < textNodes.length; i++) {
                 var textNode = textNodes[i];
                 var originalText = textNode.textContent;
+                var parent = textNode.parentNode;
                 
                 // Check if text contains translation directives
-                if (originalText.indexOf('{{') !== -1 && originalText.indexOf('}}') !== -1) {
+                var hasDirectives = originalText && originalText.indexOf('{{') !== -1 && originalText.indexOf('}}') !== -1;
+                
+                if (hasDirectives) {
+                    // Save original text in parent's data attribute for language switching
+                    if (parent && parent.setAttribute) {
+                        parent.setAttribute('data-original-text', originalText);
+                    }
                     var processedText = this.process(originalText);
                     if (processedText !== originalText) {
                         textNode.textContent = processedText;
@@ -130,7 +188,20 @@
             var titleElement = document.querySelector('title');
             if (titleElement) {
                 var titleText = titleElement.textContent;
-                if (titleText && titleText.indexOf('{{') !== -1 && titleText.indexOf('}}') !== -1) {
+                var hasTitleOriginal = titleElement.getAttribute && titleElement.getAttribute('data-original-text');
+                
+                if (hasTitleOriginal) {
+                    // Re-process saved original title (for language switching)
+                    var savedTitleOriginal = titleElement.getAttribute('data-original-text');
+                    if (savedTitleOriginal && savedTitleOriginal.indexOf('{{') !== -1) {
+                        var processedTitle = this.process(savedTitleOriginal);
+                        titleElement.textContent = processedTitle;
+                    }
+                } else if (titleText && titleText.indexOf('{{') !== -1 && titleText.indexOf('}}') !== -1) {
+                    // Save original title for language switching
+                    if (titleElement.setAttribute) {
+                        titleElement.setAttribute('data-original-text', titleText);
+                    }
                     var processedTitle = this.process(titleText);
                     if (processedTitle !== titleText) {
                         titleElement.textContent = processedTitle;
@@ -171,6 +242,13 @@
     var observer = null;
     var processedElements = new WeakSet();
     
+    /**
+     * Clear processed elements cache (for language switching)
+     */
+    HTMLTranslator._clearCache = function() {
+        processedElements = new WeakSet();
+    };
+    
     function processElement(element) {
         if (!element || processedElements.has(element)) {
             return;
@@ -208,9 +286,26 @@
         for (var i = 0; i < textNodes.length; i++) {
             var textNode = textNodes[i];
             var originalText = textNode.textContent;
-            if (originalText && originalText.indexOf('{{') !== -1 && originalText.indexOf('}}') !== -1) {
+            var parent = textNode.parentNode;
+            
+            // Check if text contains translation directives OR has saved original
+            var hasDirectives = originalText && originalText.indexOf('{{') !== -1 && originalText.indexOf('}}') !== -1;
+            var hasSavedOriginal = parent && parent.getAttribute && parent.getAttribute('data-original-text');
+            
+            if (hasDirectives) {
+                // Save original text in parent's data attribute for language switching
+                if (parent && parent.setAttribute) {
+                    parent.setAttribute('data-original-text', originalText);
+                }
                 var processedText = HTMLTranslator.process(originalText);
                 if (processedText !== originalText) {
+                    textNode.textContent = processedText;
+                }
+            } else if (hasSavedOriginal) {
+                // Re-process saved original text (for language switching)
+                var savedOriginal = parent.getAttribute('data-original-text');
+                if (savedOriginal && savedOriginal.indexOf('{{') !== -1) {
+                    var processedText = HTMLTranslator.process(savedOriginal);
                     textNode.textContent = processedText;
                 }
             }
@@ -281,33 +376,34 @@
         if (hideStyle) hideStyle.remove();
         
         // Set HTML lang and dir attributes based on current locale
-        var currentLocale = Framework.getLocale ? Framework.getLocale() : 'en';
+        // Get locale from Framework.translation (more reliable)
+        var currentLocale = window.Framework.cookie.get('locale') ?? 'en';
         if (document.documentElement) {
             document.documentElement.setAttribute('lang', currentLocale);
             document.documentElement.setAttribute('dir', currentLocale === 'ar' ? 'rtl' : 'ltr');
         }
         
-        // Process existing elements immediately
-        if (document.body) {
-            processElement(document.body);
-            // Show body after processing
-            document.body.style.visibility = 'visible';
-            document.body.style.opacity = '1';
-        }
-        if (document.head) {
-            var title = document.querySelector('title');
-            if (title) processElement(title);
-        }
-        
-        // Show all elements
-        var allElements = document.querySelectorAll('*');
-        for (var k = 0; k < allElements.length; k++) {
-            var el = allElements[k];
-            if (el.tagName !== 'SCRIPT' && el.tagName !== 'STYLE') {
-                el.style.visibility = 'visible';
-                el.style.opacity = '1';
+        // Wait a bit to ensure locale is set from cookie (by start.js)
+        // Then process existing elements using processPage (more reliable)
+        setTimeout(function() {
+            // Process page with correct locale
+            if (document.body) {
+                HTMLTranslator.processPage();
+                // Show body after processing
+                document.body.style.visibility = 'visible';
+                document.body.style.opacity = '1';
             }
-        }
+            
+            // Show all elements
+            var allElements = document.querySelectorAll('*');
+            for (var k = 0; k < allElements.length; k++) {
+                var el = allElements[k];
+                if (el.tagName !== 'SCRIPT' && el.tagName !== 'STYLE') {
+                    el.style.visibility = 'visible';
+                    el.style.opacity = '1';
+                }
+            }
+        }, 150);
         
         // Set up MutationObserver to catch new elements
         observer = new MutationObserver(function(mutations) {
@@ -340,8 +436,10 @@
             attributeFilter: ['title', 'placeholder', 'alt', 'aria-label']
         });
         
-        // Process page once more immediately to catch anything missed
-        HTMLTranslator.processPage();
+        // Process page once more after a delay to catch anything missed
+        setTimeout(function() {
+            HTMLTranslator.processPage();
+        }, 250);
     }
     
     // Start observing immediately

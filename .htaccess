@@ -30,6 +30,11 @@ DirectoryIndex resources/views/index.html
     RewriteCond %{REQUEST_URI} ^/?$
     RewriteRule ^$ resources/views/index.html [L]
     
+    # Allow API routes to pass through (for API endpoints)
+    # Support both /api/ and /test/api/ paths
+    RewriteCond %{REQUEST_URI} ^/(test/)?api/ [NC]
+    RewriteRule ^ - [L]
+    
     # Allow direct access to app, resources, artisan directories (stop processing)
     # NOTE: In Laravel, these directories exist too - use subdirectory approach
     RewriteCond %{REQUEST_URI} ^/?(app|resources|artisan|node_modules|vendor)/ [NC]

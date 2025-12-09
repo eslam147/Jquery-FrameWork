@@ -301,17 +301,42 @@
                                 e.preventDefault();
                             }
                             
+                            // Extract data attributes from element and match with method parameters
+                            var $target = $(e.currentTarget);
+                            var dataAttributes = self._extractDataAttributes($target);
+                            
+                            // Always create request object for AJAX requests (even if not in method signature)
+                            // This allows request->all() to be sent automatically with AJAX
+                            var requestObjForAjax = null;
+                            
                             // If parameter is 'request' (lowercase) - no validation, just create object
                             if (hasRequestLowercase && !requestClass) {
-                                var $form = $(e.currentTarget);
-                                var formData = $form.fw('form').serializeObject();
-                                var files = $form.fw('form').getFiles();
+                                var $target = $(e.currentTarget);
+                                var $form = $target.closest('form');
+                                var formData = {};
+                                var files = {};
                                 
-                                // Create simple object with form data
+                                // Get form data if element is inside a form
+                                if ($form.length > 0) {
+                                    formData = $form.fw('form').serializeObject();
+                                    files = $form.fw('form').getFiles();
+                                }
+                                
+                                // Create request object starting with data attributes
+                                // Data attributes are always included, form data is added if exists
                                 var requestObj = {};
+                                
+                                // First, add form data if exists
                                 for (var key in formData) {
                                     if (formData.hasOwnProperty(key)) {
                                         requestObj[key] = formData[key];
+                                    }
+                                }
+                                
+                                // Then, merge data attributes (data attributes take precedence over form data)
+                                for (var key in dataAttributes) {
+                                    if (dataAttributes.hasOwnProperty(key)) {
+                                        requestObj[key] = dataAttributes[key];
                                     }
                                 }
                                 
@@ -432,15 +457,20 @@
                                     };
                                 }
                                 
-                                // Build args array
-                                var args = new Array(params.length);
+                                // Extract data attributes and build arguments array
+                                var dataAttributes = self._extractDataAttributes($(e.currentTarget));
+                                var args = self._buildArgumentsArray(params, e, eventIndex, reqIndex, null, true, dataAttributes);
+                                
+                                // Place Request instance at its original position
+                                if (reqIndex >= 0) {
                                 args[reqIndex] = requestObj;
-                                for (var i = 0; i < params.length; i++) {
-                                    if (i !== reqIndex) {
-                                        args[i] = e;
-                                        break;
                                     }
+                                
+                                // Place event at eventIndex
+                                if (eventIndex >= 0) {
+                                    args[eventIndex] = e;
                                 }
+                                
                                 return func.apply(self, args);
                             }
                             
@@ -468,47 +498,18 @@
                                     requestInstance = new requestClass();
                                 }
                                 
-                                // Call handler with parameters in correct order
-                                // Build arguments array: Request instance at its position, event at other position
-                                var args = new Array(params.length);
+                                // Extract data attributes and build arguments array
+                                var dataAttributes = self._extractDataAttributes($(e.currentTarget));
+                                var args = self._buildArgumentsArray(params, e, eventIndex, reqIndex, requestClass, false, dataAttributes);
                                 
-                                // Place Request instance at its original position (if parameter exists)
+                                // Place Request instance at its original position
                                 if (reqIndex >= 0) {
                                     args[reqIndex] = requestInstance;
-                                } else {
-                                    // If no request parameter, add it as first argument if no event parameter exists
-                                    // Or add it after event if event exists
-                                    var hasEventParam = false;
-                                    for (var j = 0; j < params.length; j++) {
-                                        if (params[j].toLowerCase() === 'e' || params[j].toLowerCase() === 'event') {
-                                            hasEventParam = true;
-                                            break;
-                                        }
-                                    }
-                                    if (params.length === 0) {
-                                        // No parameters, add request as first
-                                        args = [requestInstance];
-                                    } else if (hasEventParam) {
-                                        // Has event parameter, add request after it
-                                        args = [e, requestInstance];
-                                    } else {
-                                        // No event parameter, add request as first
-                                        args = [requestInstance, e];
-                                    }
                                 }
                                 
-                                // Place event at the other position (first non-Request position)
-                                if (reqIndex >= 0) {
-                                    for (var i = 0; i < params.length; i++) {
-                                        if (i !== reqIndex) {
-                                            args[i] = e;
-                                            break; // Only one event parameter
-                                        }
-                                    }
-                                    // التأكد من أن args[reqIndex] يحتوي على requestInstance
-                                    if (!args[reqIndex]) {
-                                        args[reqIndex] = requestInstance;
-                                    }
+                                // Place event at eventIndex
+                                if (eventIndex >= 0) {
+                                    args[eventIndex] = e;
                                 }
                                 
                                 // إنشاء wrapper function لإضافة alias 'request' تلقائياً
@@ -568,11 +569,168 @@
                             }
                             
                             // Call the actual handler without Request
-                            return func.call(self, e);
+                            // Extract data attributes and build arguments array
+                            var dataAttributes = self._extractDataAttributes($(e.currentTarget));
+                            var args = self._buildArgumentsArray(params, e, eventIndex, -1, null, false, dataAttributes);
+                            
+                            // Place event at eventIndex
+                            if (eventIndex >= 0) {
+                                args[eventIndex] = e;
+                            }
+                            
+                            return func.apply(self, args);
                         };
                         
                         // Handle click events
                         if (methodName === 'onClick' || methodName === 'handleClick') {
+                            // Create wrapper that calls Route::execute if route exists
+                            // We search for route at click time, not at bindEvents time, because routes are registered after controllers
+                            // Use debounce for performance in large projects (if available)
+                            var clickHandler = function(e) {
+                                // Get data from form if exists, or from event
+                                var requestData = null;
+                                var $target = $(e.currentTarget);
+                                
+                                // Check if target is inside a form
+                                var $form = $target.closest('form');
+                                if ($form.length > 0) {
+                                    // Get form data
+                                    if (typeof Framework !== 'undefined' && Framework.form && typeof Framework.form.serializeObject === 'function') {
+                                        requestData = Framework.form.serializeObject($form);
+                                    } else if (typeof $form.serializeObject === 'function') {
+                                        requestData = $form.serializeObject();
+                                    } else {
+                                        // Fallback: use jQuery serializeArray
+                                        var formArray = $form.serializeArray();
+                                        requestData = {};
+                                        for (var i = 0; i < formArray.length; i++) {
+                                            requestData[formArray[i].name] = formArray[i].value;
+                                        }
+                                    }
+                                } else {
+                                    // If not in form, try to get data from data attributes
+                                    // Check for data-ajax-data attribute (JSON string)
+                                    var dataAttr = $target.attr('data-ajax-data');
+                                    if (dataAttr) {
+                                        try {
+                                            requestData = JSON.parse(dataAttr);
+                                        } catch (e) {
+                                            // If not valid JSON, use as string
+                                            requestData = dataAttr;
+                                        }
+                                    }
+                                    
+                                    // Also check for individual data-* attributes
+                                    // Collect all data-* attributes (except data-ajax-data)
+                                    if (!requestData) {
+                                        var dataAttributes = {};
+                                        var hasDataAttributes = false;
+                                        $.each($target[0].attributes, function(i, attr) {
+                                            if (attr.name.indexOf('data-') === 0 && attr.name !== 'data-ajax-data') {
+                                                var key = attr.name.replace('data-', '').replace(/-([a-z])/g, function(g) { return g[1].toUpperCase(); });
+                                                dataAttributes[key] = attr.value;
+                                                hasDataAttributes = true;
+                                            }
+                                        });
+                                        if (hasDataAttributes && Object.keys(dataAttributes).length > 0) {
+                                            requestData = dataAttributes;
+                                        }
+                                    }
+                                }
+                                
+                                // Check if there's a route for this controller method (search at click time)
+                                var routeInfo = self._findRouteForMethod(methodName);
+                                
+                                if (routeInfo) {
+                                    // Always create request object for AJAX (from dataAttributes + formData)
+                                    // This ensures request->all() is sent automatically with AJAX
+                                    var requestObjForRoute = null;
+                                    
+                                    // Use existing requestObj if available (from method signature with 'request' parameter)
+                                    if (hasRequestLowercase && !requestClass && requestObjForAjax) {
+                                        requestObjForRoute = requestObjForAjax;
+                                    } else {
+                                        // Create request object from dataAttributes and formData
+                                        // Extract data attributes from element (includes all parents with name attribute)
+                                        var dataAttributes = self._extractDataAttributes($target);
+                                        
+                                        var formData = {};
+                                        var files = {};
+                                        
+                                        // Get form data if element is inside a form
+                                        if ($form.length > 0) {
+                                            if (typeof Framework !== 'undefined' && Framework.form && typeof Framework.form.serializeObject === 'function') {
+                                                formData = Framework.form.serializeObject($form);
+                                                files = Framework.form.getFiles($form);
+                                            } else if (typeof $form.serializeObject === 'function') {
+                                                formData = $form.serializeObject();
+                                            } else {
+                                                var formArray = $form.serializeArray();
+                                                for (var i = 0; i < formArray.length; i++) {
+                                                    formData[formArray[i].name] = formArray[i].value;
+                                                }
+                                            }
+                                        }
+                                        
+                                        // Create request object starting with data attributes
+                                        requestObjForRoute = {};
+                                        
+                                        // First, add form data if exists
+                                        for (var key in formData) {
+                                            if (formData.hasOwnProperty(key)) {
+                                                requestObjForRoute[key] = formData[key];
+                                            }
+                                        }
+                                        
+                                        // Then, merge data attributes (data attributes take precedence over form data)
+                                        for (var key in dataAttributes) {
+                                            if (dataAttributes.hasOwnProperty(key)) {
+                                                requestObjForRoute[key] = dataAttributes[key];
+                                            }
+                                        }
+                                        
+                                        // Add all() method
+                                        requestObjForRoute.all = function() {
+                                            var allData = {};
+                                            for (var k in this) {
+                                                if (this.hasOwnProperty(k) && 
+                                                    k !== '_files' &&
+                                                    typeof this[k] !== 'function') {
+                                                    allData[k] = this[k];
+                                                }
+                                            }
+                                            // Include files if they exist
+                                            if (this._files && Object.keys(this._files).length > 0) {
+                                                for (var fileKey in this._files) {
+                                                    if (this._files.hasOwnProperty(fileKey)) {
+                                                        allData[fileKey] = this._files[fileKey];
+                                                    }
+                                                }
+                                            }
+                                            return allData;
+                                        };
+                                        
+                                        // Add files if they exist
+                                        if (files && Object.keys(files).length > 0) {
+                                            requestObjForRoute._files = files;
+                                        }
+                                    }
+                                    
+                                    // Store request object in controller instance for Route.execute()
+                                    self._currentRequest = requestObjForRoute;
+                                    
+                                    // Execute route - Route system will handle AJAX and call onClick with response
+                                    // Route.execute() will call onClick with (mockEvent, ajaxPromise, data)
+                                    // Pass self (controller instance) and requestData to Route.execute()
+                                    var result = Framework.Route.execute(routeInfo.method, routeInfo.url, requestData, self);
+                                    // Return the promise so it can be chained if needed
+                                    return result;
+                                } else {
+                                    // No route found, call handler normally (without response parameter)
+                                    return handler.call(this, e);
+                                }
+                            };
+                            
                             // For forms, don't prevent default on submit buttons or file inputs
                             if ($elements.is('form')) {
                                 $elements.on('click', function(e) {
@@ -586,36 +744,641 @@
                                         return true; // Allow default behavior (file picker)
                                     }
                                     // For other clicks, use the handler
-                                    return handler.call(this, e);
+                                    return clickHandler.call(this, e);
                                 });
                             } else {
-                                $elements.on('click', handler);
+                                $elements.on('click', clickHandler);
                             }
                         }
-                        // Handle submit events
+                        // Handle submit events (with route support)
                         else if (methodName === 'onSubmit' || methodName === 'handleSubmit') {
-                            $elements.on('submit', function(e) {
+                            var submitHandler = function(e) {
+                                // Get data from form
+                                var requestData = null;
+                                var $target = $(e.currentTarget);
+                                
+                                // Get form data
+                                if (typeof Framework !== 'undefined' && Framework.form && typeof Framework.form.serializeObject === 'function') {
+                                    requestData = Framework.form.serializeObject($target);
+                                } else if (typeof $target.serializeObject === 'function') {
+                                    requestData = $target.serializeObject();
+                                } else {
+                                    // Fallback: use jQuery serializeArray
+                                    var formArray = $target.serializeArray();
+                                    requestData = {};
+                                    for (var i = 0; i < formArray.length; i++) {
+                                        requestData[formArray[i].name] = formArray[i].value;
+                                    }
+                                }
+                                
+                                // Check if there's a route for this controller method
+                                var routeInfo = self._findRouteForMethod(methodName);
+                                if (routeInfo) {
+                                    // Execute route
+                                    Framework.Route.execute(routeInfo.method, routeInfo.url, requestData, self);
+                                    e.preventDefault();
+                                    return false;
+                                }
+                                
+                                // No route found, call original handler
                                 return handler.call(this, e);
-                            });
+                            };
+                            $elements.on('submit', submitHandler);
                         }
-                        // Handle change events
+                        // Handle change events (with route support)
                         else if (methodName === 'onChange' || methodName === 'handleChange') {
-                            $elements.on('change', handler);
+                            var changeHandler = function(e) {
+                                // Get data from element
+                                var requestData = null;
+                                var $target = $(e.currentTarget);
+                                
+                                // Get element value or data attributes
+                                var dataAttr = $target.attr('data-ajax-data');
+                                if (dataAttr) {
+                                    try {
+                                        requestData = JSON.parse(dataAttr);
+                                    } catch (e) {
+                                        requestData = dataAttr;
+                                    }
+                                } else {
+                                    requestData = {
+                                        value: $target.val(),
+                                        name: $target.attr('name'),
+                                        id: $target.attr('id')
+                                    };
+                                }
+                                
+                                // Check if there's a route for this controller method
+                                var routeInfo = self._findRouteForMethod(methodName);
+                                if (routeInfo) {
+                                    // Execute route
+                                    Framework.Route.execute(routeInfo.method, routeInfo.url, requestData, self);
+                                    e.preventDefault();
+                                    return false;
+                                }
+                                
+                                // No route found, call original handler
+                                return handler.call(this, e);
+                            };
+                            $elements.on('change', changeHandler);
                         }
-                        // Handle focus events
+                        // Handle focus events (with route support)
                         else if (methodName === 'onFocus' || methodName === 'handleFocus') {
-                            $elements.on('focus', handler);
+                            var focusHandler = function(e) {
+                                // Get data from element
+                                var requestData = null;
+                                var $target = $(e.currentTarget);
+                                
+                                var dataAttr = $target.attr('data-ajax-data');
+                                if (dataAttr) {
+                                    try {
+                                        requestData = JSON.parse(dataAttr);
+                                    } catch (e) {
+                                        requestData = dataAttr;
+                                    }
+                                } else {
+                                    requestData = {
+                                        name: $target.attr('name'),
+                                        id: $target.attr('id')
+                                    };
+                                }
+                                
+                                // Check if there's a route for this controller method
+                                var routeInfo = self._findRouteForMethod(methodName);
+                                if (routeInfo) {
+                                    // Execute route
+                                    Framework.Route.execute(routeInfo.method, routeInfo.url, requestData, self);
+                                    return false;
+                                }
+                                
+                                // No route found, call original handler
+                                return handler.call(this, e);
+                            };
+                            $elements.on('focus', focusHandler);
                         }
-                        // Handle blur events
+                        // Handle blur events (with route support)
                         else if (methodName === 'onBlur' || methodName === 'handleBlur') {
-                            $elements.on('blur', handler);
+                            var blurHandler = function(e) {
+                                // Get data from element
+                                var requestData = null;
+                                var $target = $(e.currentTarget);
+                                
+                                var dataAttr = $target.attr('data-ajax-data');
+                                if (dataAttr) {
+                                    try {
+                                        requestData = JSON.parse(dataAttr);
+                                    } catch (e) {
+                                        requestData = dataAttr;
+                                    }
+                                } else {
+                                    requestData = {
+                                        value: $target.val(),
+                                        name: $target.attr('name'),
+                                        id: $target.attr('id')
+                                    };
+                                }
+                                
+                                // Check if there's a route for this controller method
+                                var routeInfo = self._findRouteForMethod(methodName);
+                                if (routeInfo) {
+                                    // Execute route
+                                    Framework.Route.execute(routeInfo.method, routeInfo.url, requestData, self);
+                                    return false;
+                                }
+                                
+                                // No route found, call original handler
+                                return handler.call(this, e);
+                            };
+                            $elements.on('blur', blurHandler);
                         }
-                        // Handle hover events
+                        // Handle input events (with route support)
+                        else if (methodName === 'onInput' || methodName === 'handleInput') {
+                            var inputHandler = function(e) {
+                                // Get data from element
+                                var requestData = null;
+                                var $target = $(e.currentTarget);
+                                
+                                var dataAttr = $target.attr('data-ajax-data');
+                                if (dataAttr) {
+                                    try {
+                                        requestData = JSON.parse(dataAttr);
+                                    } catch (e) {
+                                        requestData = dataAttr;
+                                    }
+                                } else {
+                                    requestData = {
+                                        value: $target.val(),
+                                        name: $target.attr('name'),
+                                        id: $target.attr('id')
+                                    };
+                                }
+                                
+                                // Check if there's a route for this controller method
+                                var routeInfo = self._findRouteForMethod(methodName);
+                                if (routeInfo) {
+                                    // Execute route
+                                    Framework.Route.execute(routeInfo.method, routeInfo.url, requestData, self);
+                                    return false;
+                                }
+                                
+                                // No route found, call original handler
+                                return handler.call(this, e);
+                            };
+                            $elements.on('input', inputHandler);
+                        }
+                        // Handle scroll events (with route support)
+                        else if (methodName === 'onScroll' || methodName === 'handleScroll') {
+                            var scrollHandler = function(e) {
+                                // Get data from element
+                                var requestData = null;
+                                var $target = $(e.currentTarget);
+                                
+                                var dataAttr = $target.attr('data-ajax-data');
+                                if (dataAttr) {
+                                    try {
+                                        requestData = JSON.parse(dataAttr);
+                                    } catch (e) {
+                                        requestData = dataAttr;
+                                    }
+                                } else {
+                                    requestData = {
+                                        scrollTop: $target.scrollTop(),
+                                        scrollLeft: $target.scrollLeft(),
+                                        id: $target.attr('id')
+                                    };
+                                }
+                                
+                                // Check if there's a route for this controller method
+                                var routeInfo = self._findRouteForMethod(methodName);
+                                if (routeInfo) {
+                                    // Execute route
+                                    Framework.Route.execute(routeInfo.method, routeInfo.url, requestData, self);
+                                    return false;
+                                }
+                                
+                                // No route found, call original handler
+                                return handler.call(this, e);
+                            };
+                            $elements.on('scroll', scrollHandler);
+                        }
+                        // Handle keyup events (with route support)
+                        else if (methodName === 'onKeyUp' || methodName === 'handleKeyUp') {
+                            var keyupHandler = function(e) {
+                                // Get data from element
+                                var requestData = null;
+                                var $target = $(e.currentTarget);
+                                
+                                var dataAttr = $target.attr('data-ajax-data');
+                                if (dataAttr) {
+                                    try {
+                                        requestData = JSON.parse(dataAttr);
+                                    } catch (e) {
+                                        requestData = dataAttr;
+                                    }
+                                } else {
+                                    requestData = {
+                                        value: $target.val(),
+                                        key: e.key,
+                                        keyCode: e.keyCode,
+                                        name: $target.attr('name'),
+                                        id: $target.attr('id')
+                                    };
+                                }
+                                
+                                // Check if there's a route for this controller method
+                                var routeInfo = self._findRouteForMethod(methodName);
+                                if (routeInfo) {
+                                    // Execute route
+                                    Framework.Route.execute(routeInfo.method, routeInfo.url, requestData, self);
+                                    return false;
+                                }
+                                
+                                // No route found, call original handler
+                                return handler.call(this, e);
+                            };
+                            $elements.on('keyup', keyupHandler);
+                        }
+                        // Handle keydown events (with route support)
+                        else if (methodName === 'onKeyDown' || methodName === 'handleKeyDown') {
+                            var keydownHandler = function(e) {
+                                // Get data from element
+                                var requestData = null;
+                                var $target = $(e.currentTarget);
+                                
+                                var dataAttr = $target.attr('data-ajax-data');
+                                if (dataAttr) {
+                                    try {
+                                        requestData = JSON.parse(dataAttr);
+                                    } catch (e) {
+                                        requestData = dataAttr;
+                                    }
+                                } else {
+                                    requestData = {
+                                        value: $target.val(),
+                                        key: e.key,
+                                        keyCode: e.keyCode,
+                                        name: $target.attr('name'),
+                                        id: $target.attr('id')
+                                    };
+                                }
+                                
+                                // Check if there's a route for this controller method
+                                var routeInfo = self._findRouteForMethod(methodName);
+                                if (routeInfo) {
+                                    // Execute route
+                                    Framework.Route.execute(routeInfo.method, routeInfo.url, requestData, self);
+                                    return false;
+                                }
+                                
+                                // No route found, call original handler
+                                return handler.call(this, e);
+                            };
+                            $elements.on('keydown', keydownHandler);
+                        }
+                        // Handle mouseenter events (with route support)
+                        else if (methodName === 'onMouseEnter' || methodName === 'handleMouseEnter') {
+                            var mouseenterHandler = function(e) {
+                                // Get data from element
+                                var requestData = null;
+                                var $target = $(e.currentTarget);
+                                
+                                var dataAttr = $target.attr('data-ajax-data');
+                                if (dataAttr) {
+                                    try {
+                                        requestData = JSON.parse(dataAttr);
+                                    } catch (e) {
+                                        requestData = dataAttr;
+                                    }
+                                } else {
+                                    requestData = {
+                                        name: $target.attr('name'),
+                                        id: $target.attr('id')
+                                    };
+                                }
+                                
+                                // Check if there's a route for this controller method
+                                var routeInfo = self._findRouteForMethod(methodName);
+                                if (routeInfo) {
+                                    // Execute route
+                                    Framework.Route.execute(routeInfo.method, routeInfo.url, requestData, self);
+                                    return false;
+                                }
+                                
+                                // No route found, call original handler
+                                return handler.call(this, e);
+                            };
+                            $elements.on('mouseenter', mouseenterHandler);
+                        }
+                        // Handle mouseleave events (with route support)
+                        else if (methodName === 'onMouseLeave' || methodName === 'handleMouseLeave') {
+                            var mouseleaveHandler = function(e) {
+                                // Get data from element
+                                var requestData = null;
+                                var $target = $(e.currentTarget);
+                                
+                                var dataAttr = $target.attr('data-ajax-data');
+                                if (dataAttr) {
+                                    try {
+                                        requestData = JSON.parse(dataAttr);
+                                    } catch (e) {
+                                        requestData = dataAttr;
+                                    }
+                                } else {
+                                    requestData = {
+                                        name: $target.attr('name'),
+                                        id: $target.attr('id')
+                                    };
+                                }
+                                
+                                // Check if there's a route for this controller method
+                                var routeInfo = self._findRouteForMethod(methodName);
+                                if (routeInfo) {
+                                    // Execute route
+                                    Framework.Route.execute(routeInfo.method, routeInfo.url, requestData, self);
+                                    return false;
+                                }
+                                
+                                // No route found, call original handler
+                                return handler.call(this, e);
+                            };
+                            $elements.on('mouseleave', mouseleaveHandler);
+                        }
+                        // Handle hover events (DEPRECATED - use onMouseEnter/onMouseLeave instead)
+                        // Note: onHover does NOT support routes - use onMouseEnter/onMouseLeave for route support
                         else if (methodName === 'onHover' || methodName === 'handleHover') {
+                            // Simple handler without route support (deprecated)
                             $elements.on('mouseenter mouseleave', handler);
                         }
                     })(method, needsPreventDefault, RequestClass, methodFunc, params, requestParamIndex, hasRequestParam, eventParamIndex);
                 }
+            }
+        },
+
+        /**
+         * Extract data attributes from element and all parents (with name attribute)
+         * Supports: data-id, data-variation-id, data-variation_id, etc.
+         * Uses 'name' attribute to identify parent elements
+         * Structure: {id: 1, variation_id: 10, test: {id: 5, product_id: 50, grand: {id: 4}}}
+         * @param {jQuery} $element - jQuery element
+         * @returns {Object} Object with normalized attribute names as keys, plus nested parent data
+         */
+        _extractDataAttributes: function($element) {
+            var result = {};
+            var currentElement = $element[0];
+            
+            if (!currentElement) {
+                return result;
+            }
+            
+            /**
+             * Extract data attributes from a single element
+             * @param {HTMLElement} el - Element to extract from
+             * @returns {Object} Object with data attributes (normalized keys)
+             */
+            var extractFromElement = function(el) {
+                var data = {};
+                
+                if (!el || !el.attributes) {
+                    return data;
+                }
+                
+                for (var i = 0; i < el.attributes.length; i++) {
+                    var attr = el.attributes[i];
+                    var attrName = attr.name;
+                    
+                    // Check if it's a data-* attribute
+                    if (attrName.indexOf('data-') === 0) {
+                        // Remove 'data-' prefix
+                        var key = attrName.substring(5);
+                        
+                        // Normalize: convert kebab-case to snake_case
+                        key = key.replace(/-/g, '_');
+                        
+                        // Parse value
+                        var value = attr.value;
+                        if (value && (value.startsWith('{') || value.startsWith('['))) {
+                            try { value = JSON.parse(value); } catch (e) {}
+                        }
+                        if (typeof value === 'string' && /^\d+(\.\d+)?$/.test(value)) {
+                            value = parseFloat(value);
+                        }
+                        if (value === 'true') value = true;
+                        if (value === 'false') value = false;
+                        
+                        data[key] = value;
+                    }
+                }
+                
+                return data;
+            };
+            
+            // Extract from current element (the clicked element)
+            var currentData = extractFromElement(currentElement);
+            
+            // Add current element's data to result (flat structure for direct parameter matching)
+            for (var key in currentData) {
+                if (currentData.hasOwnProperty(key)) {
+                    result[key] = currentData[key];
+                }
+            }
+            
+            // Build chain of parent elements (from current to top)
+            // Only include parents that have 'name' attribute
+            var chain = [];
+            var element = currentElement.parentElement;
+            
+            // Start from parent and go up
+            while (element && element !== document.body && element !== document.documentElement) {
+                var name = element.getAttribute && element.getAttribute('name');
+                if (name) {
+                    // Normalize name: convert kebab-case to snake_case
+                    name = name.replace(/-/g, '_');
+                    
+                    var parentData = extractFromElement(element);
+                    chain.push({
+                        element: element,
+                        name: name,
+                        data: parentData
+                    });
+                }
+                element = element.parentElement;
+            }
+            
+            // If no parents with 'name' attribute, return current element's data only
+            if (chain.length === 0) {
+                return result;
+            }
+            
+            // Build nested structure from bottom to top
+            // Start from the deepest parent (closest to current element) and build up
+            // Structure: test3 -> test2 -> test (each parent contains its child)
+            var nested = null;
+            
+            for (var i = 0; i < chain.length; i++) {
+                var item = chain[i];
+                var itemName = item.name;
+                var itemData = item.data;
+                
+                // Create a copy of parent data (don't modify original)
+                // Parent data should contain ONLY parent's data attributes
+                var parentData = {};
+                for (var key in itemData) {
+                    if (itemData.hasOwnProperty(key)) {
+                        parentData[key] = itemData[key];
+                    }
+                }
+                
+                if (i === 0) {
+                    // First parent (closest to current element) - start nested structure
+                    nested = parentData;
+                } else {
+                    // Parent of parent - add previous nested structure as child
+                    var previousItem = chain[i - 1];
+                    var previousName = previousItem.name;
+                    
+                    // Add previous nested structure as child inside current parent
+                    parentData[previousName] = nested;
+                    
+                    // Update nested to be the current parent (which now contains the previous one)
+                    nested = parentData;
+                }
+            }
+            
+            // Add the top-level parent (the outermost one) to result
+            if (chain.length > 0) {
+                var topLevelItem = chain[chain.length - 1];
+                var topLevelName = topLevelItem.name;
+                result[topLevelName] = nested;
+            }
+            
+            return result;
+        },
+
+        /**
+         * Build arguments array for method call
+         * Matches parameters with data attributes and event/request
+         * @param {Array} params - Method parameter names
+         * @param {Event} e - Event object
+         * @param {number} eventIndex - Index of event parameter
+         * @param {number} reqIndex - Index of Request parameter
+         * @param {Function} requestClass - Request class (if any)
+         * @param {boolean} hasRequestLowercase - Has lowercase 'request' parameter
+         * @param {Object} dataAttributes - Extracted data attributes
+         * @returns {Array} Arguments array
+         */
+        _buildArgumentsArray: function(params, e, eventIndex, reqIndex, requestClass, hasRequestLowercase, dataAttributes) {
+            var args = new Array(params.length);
+            
+            // Fill in parameters from data attributes
+            for (var i = 0; i < params.length; i++) {
+                var paramName = params[i].trim();
+                
+                // Skip if this is event or request parameter (will be filled later)
+                if (i === eventIndex || i === reqIndex) {
+                    continue;
+                }
+                
+                // Check if parameter has default value (e.g., "variation_id = null")
+                var defaultMatch = paramName.match(/^(\w+)\s*=\s*(.+)$/);
+                var actualParamName = defaultMatch ? defaultMatch[1].trim() : paramName;
+                var defaultValue = defaultMatch ? defaultMatch[2].trim() : undefined;
+                
+                // Normalize parameter name (convert to lowercase for matching)
+                var normalizedParamName = actualParamName.toLowerCase();
+                
+                // Try to find matching data attribute (case-insensitive, supports both _ and -)
+                var matchedValue = undefined;
+                
+                // Direct match
+                if (dataAttributes.hasOwnProperty(actualParamName)) {
+                    matchedValue = dataAttributes[actualParamName];
+                } else if (dataAttributes.hasOwnProperty(normalizedParamName)) {
+                    matchedValue = dataAttributes[normalizedParamName];
+                } else {
+                    // Try case-insensitive match
+                    for (var key in dataAttributes) {
+                        if (dataAttributes.hasOwnProperty(key)) {
+                            if (key.toLowerCase() === normalizedParamName) {
+                                matchedValue = dataAttributes[key];
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                // Use matched value or default value
+                if (matchedValue !== undefined) {
+                    args[i] = matchedValue;
+                } else if (defaultValue !== undefined) {
+                    // Parse default value
+                    if (defaultValue === 'null') {
+                        args[i] = null;
+                    } else if (defaultValue === 'true') {
+                        args[i] = true;
+                    } else if (defaultValue === 'false') {
+                        args[i] = false;
+                    } else if (/^\d+$/.test(defaultValue)) {
+                        args[i] = parseInt(defaultValue, 10);
+                    } else if (/^\d+\.\d+$/.test(defaultValue)) {
+                        args[i] = parseFloat(defaultValue);
+                    } else if (defaultValue.startsWith('"') && defaultValue.endsWith('"')) {
+                        args[i] = defaultValue.slice(1, -1);
+                    } else if (defaultValue.startsWith("'") && defaultValue.endsWith("'")) {
+                        args[i] = defaultValue.slice(1, -1);
+                    } else {
+                        args[i] = defaultValue;
+                    }
+                } else {
+                    // No value found and no default - set to undefined
+                    args[i] = undefined;
+                }
+            }
+            
+            return args;
+        },
+
+        /**
+         * Find route for a specific method
+         * @param {string} methodName - The method name (e.g., 'onClick', 'onSubmit')
+         * @returns {Object|null} Route info or null if not found
+         */
+        _findRouteForMethod: function(methodName) {
+            if (typeof Framework === 'undefined' || !Framework.Route) {
+                return null;
+            }
+            
+            // Try to find controller in Framework by name
+            var controllerName = this.constructor ? this.constructor.name : null;
+            
+            // Remove 'Class' suffix if exists (AjaxGetControllerClass -> AjaxGetController)
+            var controllerNameInFramework = controllerName;
+            if (controllerName && controllerName.endsWith('Class')) {
+                controllerNameInFramework = controllerName.replace(/Class$/, '');
+            }
+            
+            var controllerInFramework = null;
+            if (controllerNameInFramework && Framework[controllerNameInFramework]) {
+                controllerInFramework = Framework[controllerNameInFramework];
+            } else {
+                // Try to find by searching Framework for controllers that match
+                for (var key in Framework) {
+                    if (Framework.hasOwnProperty(key) && 
+                        key.indexOf('Controller') !== -1 &&
+                        typeof Framework[key] === 'function') {
+                        if (controllerName && key === controllerName.replace(/Class$/, '')) {
+                            controllerInFramework = Framework[key];
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // If we found the controller in Framework, search for route
+            if (controllerInFramework) {
+                return Framework.Route.findByController(controllerInFramework, methodName);
+            } else {
+                // Fallback: try with this.constructor
+                return Framework.Route.findByController(this.constructor, methodName);
             }
         },
 
@@ -666,7 +1429,6 @@
                     }
                 }
             } catch (e) {
-                console.warn('Error in compact:', e);
             }
             
             return result;

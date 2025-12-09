@@ -107,18 +107,18 @@
         // استبدال @foreach loops
         html = Framework._processForeachLoops(html, data);
         
-        // استبدال المتغيرات البسيطة {{ variable }} (مع HTML escaping)
-        html = html.replace(/\{\{\s*(\w+)\s*\}\}/g, function(match, varName) {
-            var value = Framework._getNestedValue(data, varName);
-            if (value === undefined) return '';
+        // استبدال المتغيرات المتداخلة {{ variable }} أو {{ variable.property }} (مع HTML escaping)
+        html = html.replace(/\{\{\s*([\w.]+)\s*\}\}/g, function(match, varPath) {
+            var value = Framework._getNestedValue(data, varPath);
+            if (value === undefined || value === null) return '';
             // Escape HTML
             return $('<div>').text(String(value)).html();
         });
         
-        // استبدال المتغيرات مع HTML (بدون escaping) {!! variable !!}
-        html = html.replace(/\{!!\s*(\w+)\s*!!\}/g, function(match, varName) {
-            var value = Framework._getNestedValue(data, varName);
-            if (value === undefined) return '';
+        // استبدال المتغيرات مع HTML (بدون escaping) {!! variable !!} أو {!! variable.property !!}
+        html = html.replace(/\{!!\s*([\w.]+)\s*!!\}/g, function(match, varPath) {
+            var value = Framework._getNestedValue(data, varPath);
+            if (value === undefined || value === null) return '';
             // Convert objects to JSON string
             if (typeof value === 'object') {
                 return JSON.stringify(value, null, 2);
@@ -130,17 +130,73 @@
     };
 
     /**
-     * Process @if statements
+     * Process @if statements with @else support
+     * Handles nested @if statements by processing innermost first
      */
     Framework._processIfStatements = function(html, data) {
-        // @if(condition) ... @endif
-        var ifRegex = /@if\s*\(([^)]+)\)([\s\S]*?)@endif/g;
+        var maxIterations = 50;
+        var iteration = 0;
         
-        html = html.replace(ifRegex, function(match, condition, content) {
-            // تقييم الشرط
-            var conditionResult = Framework._evaluateCondition(condition, data);
-            return conditionResult ? content : '';
-        });
+        while (iteration < maxIterations) {
+            // Find innermost @if (one without nested @if inside)
+            var innermostMatch = null;
+            var ifRegex = /@if\s*\(([^)]+)\)/g;
+            var match;
+            
+            while ((match = ifRegex.exec(html)) !== null) {
+                var startPos = match.index;
+                var condition = match[1];
+                var contentStart = match.index + match[0].length;
+                
+                // Find matching @endif
+                var pos = contentStart;
+                var depth = 1;
+                var elsePos = -1;
+                var endPos = -1;
+                
+                while (pos < html.length && depth > 0) {
+                    if (html.substr(pos, 5) === '@else' && depth === 1 && elsePos === -1) {
+                        elsePos = pos;
+                        pos += 5;
+                        continue;
+                    }
+                    if (html.substr(pos, 3) === '@if') {
+                        depth++;
+                        pos += 3;
+                        continue;
+                    }
+                    if (html.substr(pos, 6) === '@endif') {
+                        depth--;
+                        if (depth === 0) {
+                            endPos = pos + 6;
+                            break;
+                        }
+                        pos += 6;
+                        continue;
+                    }
+                    pos++;
+                }
+                
+                if (endPos === -1) continue;
+                
+                // Check if this @if contains nested @if
+                var ifContent = html.substring(contentStart, elsePos !== -1 ? elsePos : endPos - 6);
+                var elseContent = elsePos !== -1 ? html.substring(elsePos + 5, endPos - 6) : null;
+                
+                var hasNested = /@if\s*\(/.test(ifContent) || (elseContent && /@if\s*\(/.test(elseContent));
+                
+                if (!hasNested) {
+                    // This is innermost, process it
+                    var conditionResult = Framework._evaluateCondition(condition, data);
+                    var replacement = conditionResult ? ifContent : (elseContent || '');
+                    html = html.substring(0, startPos) + replacement + html.substring(endPos);
+                    break; // Process one at a time
+                }
+            }
+            
+            if (!match) break; // No more @if statements
+            iteration++;
+        }
         
         return html;
     };
@@ -204,19 +260,32 @@
     };
 
     /**
-     * Evaluate condition
+     * Evaluate condition - supports nested properties like data.title
      */
     Framework._evaluateCondition = function(condition, data) {
-        // بسيط: variable أو !variable
         condition = condition.trim();
         
+        // Handle negation: !variable or !variable.property
         if (condition.startsWith('!')) {
-            var varName = condition.substring(1).trim();
-            var value = Framework._getNestedValue(data, varName);
-            return !value;
+            var varPath = condition.substring(1).trim();
+            var value = Framework._getNestedValue(data, varPath);
+            // Consider empty strings, null, undefined, false, 0, empty arrays/objects as falsy
+            if (value === null || value === undefined || value === false || value === 0 || value === '') {
+                return true; // !falsy = true
+            }
+            if (Array.isArray(value) && value.length === 0) return true;
+            if (typeof value === 'object' && Object.keys(value).length === 0) return true;
+            return false; // !truthy = false
         } else {
+            // Support nested properties like data.title, data.message, etc.
             var value = Framework._getNestedValue(data, condition);
-            return !!value;
+            // Consider empty strings, null, undefined, false, 0, empty arrays/objects as falsy
+            if (value === null || value === undefined || value === false || value === 0 || value === '') {
+                return false;
+            }
+            if (Array.isArray(value) && value.length === 0) return false;
+            if (typeof value === 'object' && Object.keys(value).length === 0) return false;
+            return true;
         }
     };
 

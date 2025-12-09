@@ -31,6 +31,24 @@ return {
     form_sent_successfully: 'Form sent successfully!',
     sent_data: 'Sent Data:',
     button_clicked: 'Button clicked: :button',
-    version: 'v0.1'
+    ajax_examples_route_system: 'AJAX Examples (Route System)',
+    example_laravel_syntax: 'Example using Laravel-like syntax:',
+    click_buttons_test_ajax: 'Click the buttons below to test AJAX requests. Results will appear automatically in the result box.',
+    test_get_request: 'Test GET Request',
+    test_post_request: 'Test POST Request',
+    test_local_request: 'Test Local Request',
+    ajax_results_will_appear: 'AJAX results will appear here...',
+    success: 'Success!',
+    error: 'Error',
+    title: 'Title:',
+    body: 'Body:',
+    user_id: 'User ID:',
+    post_id: 'Post ID:',
+    message: 'Message:',
+    data: 'Data:',
+    loading: 'Loading...',
+    version: 'v0.1',
+    switch_language: 'Switch Language',
+    language: 'Language'
 }
 
