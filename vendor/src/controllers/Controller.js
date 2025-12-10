@@ -554,13 +554,13 @@
                                             functionBody;
                                         
                                         try {
-                                            console.log(paramNames.join(','));
-                                            console.log(newFunctionBody);
                                             var newFunc = new Function(paramNames.join(','), newFunctionBody);
-                                            // Use newFunc directly in closure - it will be captured automatically
-                                            func = function() {
-                                                return newFunc.apply(self, arguments);
-                                            };
+                                            // Use IIFE to properly capture newFunc in closure
+                                            (function(capturedFunc) {
+                                                func = function() {
+                                                    return capturedFunc.apply(self, arguments);
+                                                };
+                                            })(newFunc);
                                         } catch (e) {
                                             func = originalFunc;
                                         }
@@ -648,14 +648,16 @@
                                         // إنشاء function جديد باستخدام Function constructor
                                         try {
                                             var newFunc = new Function(paramNames.join(','), newFunctionBody);
-                                            // Use newFunc directly in closure - it will be captured automatically
-                                            func = function() {
-                                                // التحقق من أن arguments[reqIndex] موجود
-                                                if (!arguments[reqIndex]) {
-                                                    // Request instance not found
-                                                }
-                                                return newFunc.apply(self, arguments);
-                                            };
+                                            // Use IIFE to properly capture newFunc in closure
+                                            (function(capturedFunc) {
+                                                func = function() {
+                                                    // التحقق من أن arguments[reqIndex] موجود
+                                                    if (!arguments[reqIndex]) {
+                                                        // Request instance not found
+                                                    }
+                                                    return capturedFunc.apply(self, arguments);
+                                                };
+                                            })(newFunc);
                                         } catch (e) {
                                             // إذا فشل، نستخدم الدالة الأصلية
                                             func = originalFunc;
