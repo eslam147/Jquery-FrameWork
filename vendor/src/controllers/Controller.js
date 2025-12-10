@@ -584,6 +584,9 @@
                                         
                                         var newFunctionBody = 'var request = arguments[' + reqIndex + ']; ' +
                                             targetVar +
+                                            'var view = function(viewName, selector, data) { ' +
+                                            'return Framework.view(viewName, selector, data); ' +
+                                            '}; ' +
                                             'var compact = function() { ' +
                                             'var varNames = Array.prototype.slice.call(arguments); ' +
                                             'var result = {}; ' +
@@ -592,9 +595,6 @@
                                             'try { result[name] = eval(name); } catch(e) {} ' +
                                             '} ' +
                                             'return result; ' +
-                                            '}; ' +
-                                            'var view = function(viewName, selector, data) { ' +
-                                            'return Framework.view(viewName, selector, data); ' +
                                             '}; ' +
                                             functionBody;
                                         
