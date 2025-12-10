@@ -245,14 +245,6 @@ public function onClick(e) {
 - **Bootstrap 5 Support**: Full support for Bootstrap 5 modals with dynamic loading
 - **Reopening Support**: Creates new modal instances each time, allowing modals to be reopened after closing
 
-### Global openModal Function
-
-You can also use `openModal` globally in HTML:
-
-```html
-<button data-id="1" onclick="openModal('modal1', event)">Open Modal</button>
-```
-
 ### Opening Modals from Views
 
 When using the `view()` helper with a modal view, the modal is automatically opened:
@@ -357,13 +349,13 @@ Language files are located in `lang/{locale}/messages.js`:
 
 ```javascript
 // lang/en/messages.js
-module.exports = {
+return {
     welcome: 'Welcome',
     description: 'This is a description'
 };
 
 // lang/ar/messages.js
-module.exports = {
+return {
     welcome: 'مرحباً',
     description: 'هذا وصف'
 };
