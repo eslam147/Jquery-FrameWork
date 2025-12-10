@@ -293,10 +293,9 @@
                                     functionBody;
                                 try {
                                     var newFunc = new Function(paramNames.join(','), newFunctionBody);
-                                    // Store newFunc in a variable that will be captured in closure
-                                    var funcToUse = newFunc;
+                                    // Use newFunc directly in closure - it will be captured automatically
                                     func = function() {
-                                        return funcToUse.apply(self, arguments);
+                                        return newFunc.apply(self, arguments);
                                     };
                                 } catch (e) {
                                     // If fails, use original function
@@ -554,12 +553,9 @@
                                         
                                         try {
                                             var newFunc = new Function(paramNames.join(','), newFunctionBody);
-                                            // Store newFunc in a variable that will be captured in closure
-                                            var funcToUse = newFunc;
-                                            console.log(newFunc);
-                                            console.log(funcToUse);
+                                            // Use newFunc directly in closure - it will be captured automatically
                                             func = function() {
-                                                return funcToUse.apply(self, arguments);
+                                                return newFunc.apply(self, arguments);
                                             };
                                         } catch (e) {
                                             func = originalFunc;
@@ -648,14 +644,13 @@
                                         // إنشاء function جديد باستخدام Function constructor
                                         try {
                                             var newFunc = new Function(paramNames.join(','), newFunctionBody);
-                                            // Store newFunc in a variable that will be captured in closure
-                                            var funcToUse = newFunc;
+                                            // Use newFunc directly in closure - it will be captured automatically
                                             func = function() {
                                                 // التحقق من أن arguments[reqIndex] موجود
                                                 if (!arguments[reqIndex]) {
                                                     // Request instance not found
                                                 }
-                                                return funcToUse.apply(self, arguments);
+                                                return newFunc.apply(self, arguments);
                                             };
                                         } catch (e) {
                                             // إذا فشل، نستخدم الدالة الأصلية
