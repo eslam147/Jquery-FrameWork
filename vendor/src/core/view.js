@@ -519,6 +519,9 @@
     // Register view as a module
     Framework.register('view', {
         render: Framework.view,
+    
+    // Make view available globally
+    window.view = Framework.view;
         compact: Framework.compact
     });
     // Make compact available globally - مثل Laravel
