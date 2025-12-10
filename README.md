@@ -22,7 +22,6 @@ A powerful, Laravel-like JavaScript framework built on jQuery, designed for larg
 ### CLI Commands (ArtisanJs)
 - **make:controller**: Create new controller with automatic boot.js registration
 - **make:request**: Create new request class with automatic boot.js registration
-- **make:view**: Create new view template
 - **delete:controller**: Delete controller and automatically remove from boot.js
 - **delete:request**: Delete request and automatically remove from boot.js
 

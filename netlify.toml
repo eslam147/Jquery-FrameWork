@@ -1,0 +1,9 @@
+[build]
+  publish = "."
+  command = ""
+
+[[redirects]]
+  from = "/*"
+  to = "/resources/views/index.html"
+  status = 200
+
