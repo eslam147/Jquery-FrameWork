@@ -71,6 +71,7 @@
         '../vendor/src/core/requests.js',
         // Config (in vendor/src/js, relative to app/)
         '../vendor/src/js/config.js',
+        '../vendor/src/js/helper.js',
         // Modules (in vendor/src/modules, relative to app/)
         '../vendor/src/modules/dom.js',
         '../vendor/src/modules/form.js',
