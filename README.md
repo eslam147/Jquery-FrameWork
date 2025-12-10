@@ -188,10 +188,10 @@ class ButtonController extends Controller {
 
 ```javascript
 // Simple route without element return
-Route::get('https://api.example.com/data', [ButtonController::class, 'onClick']);
+Route::get('/data', [ButtonController::class, 'onClick']);
 
 // POST route
-Route::post('https://api.example.com/posts', [PostController::class, 'onSubmit']);
+Route::post('/posts', [PostController::class, 'onSubmit']);
 ```
 
 ## 🎨 Example View
