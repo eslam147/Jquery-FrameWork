@@ -18,14 +18,21 @@
     var baseUrl = window.location.protocol + '//' + window.location.host;
     
     if (scriptSrc) {
-        // Check if scriptSrc is absolute URL
-        var isAbsoluteUrl = scriptSrc.indexOf('http://') === 0 || scriptSrc.indexOf('https://') === 0 || scriptSrc.indexOf('//') === 0;
+        // Check if scriptSrc is absolute URL (full URL)
+        var isFullUrl = scriptSrc.indexOf('http://') === 0 || scriptSrc.indexOf('https://') === 0 || scriptSrc.indexOf('//') === 0;
         
-        if (isAbsoluteUrl) {
-            // boot.js is in vendor/src/js/, so we need to go up to project root
+        // Check if scriptSrc is absolute path (starts with /)
+        var isAbsolutePath = scriptSrc.indexOf('/') === 0 && !isFullUrl;
+        
+        if (isFullUrl) {
+            // Full URL: https://domain.com/vendor/src/js/boot.js
             var scriptPath = scriptSrc.substring(0, scriptSrc.lastIndexOf('/'));
             // Remove /vendor/src/js to get to project root
             projectRoot = scriptPath.replace(/\/vendor\/src\/js$/, '');
+        } else if (isAbsolutePath) {
+            // Absolute path: /vendor/src/js/boot.js
+            // Remove /vendor/src/js to get project root (which is just baseUrl)
+            projectRoot = baseUrl;
         } else {
             // Relative path - resolve it from current page location
             var currentPagePath = window.location.pathname;
@@ -34,9 +41,7 @@
             // Resolve relative path
             var resolvedPath = new URL(scriptSrc, baseUrl + currentDir).pathname;
             // Remove /vendor/src/js to get project root
-            projectRoot = resolvedPath.replace(/\/vendor\/src\/js$/, '');
-            // Ensure it's absolute
-            projectRoot = baseUrl + projectRoot;
+            projectRoot = baseUrl + resolvedPath.replace(/\/vendor\/src\/js$/, '');
         }
         basePath = projectRoot + '/app/';
     } else {
