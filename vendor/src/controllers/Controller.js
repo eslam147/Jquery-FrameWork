@@ -293,12 +293,11 @@
                                     functionBody;
                                 try {
                                     var newFunc = new Function(paramNames.join(','), newFunctionBody);
-                                    // Capture in closure immediately
-                                    func = (function(capturedFunc) {
-                                        return function() {
-                                            return capturedFunc.apply(self, arguments);
-                                        };
-                                    })(newFunc);
+                                    // Store newFunc in a variable that will be captured in closure
+                                    var funcToUse = newFunc;
+                                    func = function() {
+                                        return funcToUse.apply(self, arguments);
+                                    };
                                 } catch (e) {
                                     // If fails, use original function
                                     func = originalFunc;
@@ -555,12 +554,11 @@
                                         
                                         try {
                                             var newFunc = new Function(paramNames.join(','), newFunctionBody);
-                                            // Capture in closure immediately
-                                            func = (function(capturedFunc) {
-                                                return function() {
-                                                    return capturedFunc.apply(self, arguments);
-                                                };
-                                            })(newFunc);
+                                            // Store newFunc in a variable that will be captured in closure
+                                            var funcToUse = newFunc;
+                                            func = function() {
+                                                return funcToUse.apply(self, arguments);
+                                            };
                                         } catch (e) {
                                             func = originalFunc;
                                         }
@@ -648,16 +646,15 @@
                                         // إنشاء function جديد باستخدام Function constructor
                                         try {
                                             var newFunc = new Function(paramNames.join(','), newFunctionBody);
-                                            // Capture in closure immediately
-                                            func = (function(capturedFunc) {
-                                                return function() {
-                                                    // التحقق من أن arguments[reqIndex] موجود
-                                                    if (!arguments[reqIndex]) {
-                                                        // Request instance not found
-                                                    }
-                                                    return capturedFunc.apply(self, arguments);
-                                                };
-                                            })(newFunc);
+                                            // Store newFunc in a variable that will be captured in closure
+                                            var funcToUse = newFunc;
+                                            func = function() {
+                                                // التحقق من أن arguments[reqIndex] موجود
+                                                if (!arguments[reqIndex]) {
+                                                    // Request instance not found
+                                                }
+                                                return funcToUse.apply(self, arguments);
+                                            };
                                         } catch (e) {
                                             // إذا فشل، نستخدم الدالة الأصلية
                                             func = originalFunc;
