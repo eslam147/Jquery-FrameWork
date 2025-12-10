@@ -32,7 +32,7 @@ class Modal2Controller extends Controller {
      * Can be used in HTML: onclick="openModal('modal_5', event)"
      */
     public function openModal() {
-        return 'modal2';
+        return '#modal2';
     }
     /**
      * Initialize controller (called automatically)

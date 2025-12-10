@@ -183,8 +183,8 @@ class ButtonController extends Controller {
         // Use view helper to render templates
         return view('welcome', '#result', compact('id', 'variation_id'));
         
-        // Use openModal helper to open modals
-        this.openModal('modal1', e);
+        // Use view helper to open modals (automatically opens when view name contains 'modal')
+        return view('modal1', '#modal-content', compact('id'));
     }
 }
 ```
@@ -222,36 +222,17 @@ Route::post('https://api.example.com/posts', [PostController::class, 'onSubmit']
 
 The framework includes a comprehensive modal system with Bootstrap 5 support, automatic ID detection, and seamless integration with controllers and views.
 
-### Opening Modals from Controllers
+### Opening Modals Using view() Helper
 
-The framework includes a built-in `openModal` method that can be used in controllers:
+The recommended way to open modals is using the `view()` helper. The modal will be automatically rendered and opened:
 
-```javascript
-public function onClick(e) {
-    // Open modal by name (automatically handles # or . prefix)
-    // The method automatically extracts data-id from the onClick event
-    this.openModal('modal1', e);
-    
-    // If the clicked element has data-id="5", it will automatically look for:
-    // - #modal1_5 (if ID selector)
-    // - .modal1_5 (if class selector)
-}
-```
+#### With Parameters
 
-**Key Features:**
-- **Automatic ID Detection**: The `id` from the `onClick` event is automatically extracted and used
-- **Smart Selector Detection**: Automatically tries ID (`#`) first, then class (`.`)
-- **Data-ID Support**: If the clicked element has `data-id`, it's automatically appended as `_id` to the modal selector
-- **Bootstrap 5 Support**: Full support for Bootstrap 5 modals with dynamic loading
-- **Reopening Support**: Creates new modal instances each time, allowing modals to be reopened after closing
-
-### Opening Modals from Views
-
-When using the `view()` helper with a modal view, the modal is automatically opened:
+If you need to pass parameters to the modal view:
 
 ```javascript
-public function onClick(e) {
-    // Render modal view and automatically open it
+public function onClick(e, id) {
+    // Render modal view with parameters and automatically open it
     return view('modal1', '#modal-content', compact('id'));
     
     // The modal will be:
@@ -261,11 +242,37 @@ public function onClick(e) {
 }
 ```
 
+#### Without Parameters
+
+If you don't need to pass any parameters:
+
+```javascript
+public function onClick(e) {
+    // Render modal view without parameters and automatically open it
+    return view('modal2', '#modal-content');
+    
+    // The modal will be automatically rendered and opened
+}
+```
+
 **View Modal Features:**
 - **Auto-opening**: Modals are automatically opened when rendered via `view()`
 - **Selector Preservation**: Modal remains in the specified selector (not moved to body)
 - **Bootstrap Loading**: Bootstrap 5 is dynamically loaded if not already present
 - **d-none Removal**: The `d-none` class is automatically removed from the target selector
+- **Automatic Detection**: The view system automatically detects if the view name contains 'modal' and opens it
+
+### openModal Method in Controller
+
+The `openModal` method in the Controller class is used to define the modal selector. You only need to write the modal name:
+
+```javascript
+public function openModal() {
+    return 'modal1'; // or '#modal1' or '.modal1'
+}
+```
+
+This method is used internally by the framework to determine which modal to open.
 
 ### Modal View Template Example
 
@@ -294,18 +301,27 @@ public function onClick(e) {
 </div>
 ```
 
-### How openModal Works
+### How Modal System Works
 
-1. **Event Integration**: When called from `onClick`, the event object is automatically passed
-2. **ID Extraction**: Extracts `data-id` from `e.currentTarget` if available
-3. **Selector Building**: Builds the final selector:
-   - Without `data-id`: `modal1` → tries `#modal1` then `.modal1`
-   - With `data-id="5"`: `modal1` → tries `#modal1_5` then `.modal1_5`
-4. **Bootstrap Support**: 
+1. **View Rendering**: When you call `view('modal1', '#modal-content')`, the framework:
+   - Loads the modal template from `resources/views/modal1.html`
+   - Renders it with any provided data
+   - Inserts it into the specified selector (`#modal-content`)
+
+2. **Automatic Detection**: The view system automatically detects if the view name contains 'modal'
+
+3. **Auto-opening**: Once detected, the framework:
+   - Finds the modal element in the rendered content
    - Checks if Bootstrap 5 is loaded
    - Dynamically loads Bootstrap if needed
-   - Creates new modal instance (disposes old one if exists)
-   - Opens the modal
+   - Creates a new Bootstrap Modal instance (disposes old one if exists)
+   - Opens the modal automatically
+
+4. **Bootstrap Support**: 
+   - Full Bootstrap 5 integration
+   - Dynamic loading when needed
+   - Proper instance management for reopening
+
 5. **Reopening**: Each call creates a fresh instance, allowing modals to be reopened multiple times
 
 ### Problems Solved
