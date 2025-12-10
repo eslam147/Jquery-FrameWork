@@ -22,7 +22,9 @@ class FormController extends Controller {
     public function selector() {
         return '#demo-form';
     }
-
+    public function openModal() {
+        return '';
+    }
         /**
          * Initialize controller (called automatically)
          */
@@ -83,15 +85,23 @@ class FormController extends Controller {
             // Your blur handler code here
     }
 
-        /**
-         * Handle hover event
-         */
-    public function onHover(e) {
-            if (e.type === 'mouseenter') {
-                // Mouse entered
-            } else if (e.type === 'mouseleave') {
-                // Mouse left
-            }
-        }
+    /**
+     * Handle hover event
+     */
+    public function onMouseEnter(e) {
+        // response is the AJAX promise from Route system (if route exists)
+        // Your mouseenter handler code here
+    }
+    /**
+     * Handle mouseleave event - Uses route system
+     */
+    public function onMouseLeave(e) {
+        // response is the AJAX promise from Route system (if route exists)
+        // var data = response->data;
+        // var success = response->success;
+        // var error = response->error;
+        // var status = response->status;
+        // Your mouseleave handler code here
+    }    
 }
 

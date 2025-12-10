@@ -17,13 +17,14 @@ class AjaxGetController extends Controller {
     public function selector() {
         return '#ajax-get-btn';
     }
-
+    public function openModal() {
+        return '';
+    }
     /**
      * Initialize controller (called automatically)
      */
     public function onInit() {
     }
-
     /**
      * Handle click event - Uses route system
      * Note: e.preventDefault() is called automatically by Controller

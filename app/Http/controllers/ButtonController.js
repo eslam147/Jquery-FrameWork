@@ -22,7 +22,9 @@ class ButtonController extends Controller {
     public function selector() {
         return '.jqfw-btn';
     }
-
+    public function openModal() {
+        return '';
+    }
     /**
      * Initialize controller (called automatically)
      */
@@ -34,15 +36,9 @@ class ButtonController extends Controller {
      * Note: e.preventDefault() is called automatically by Controller
      */
     public function onClick(e, request) {
-        // Test parameters from data attributes
-        // Your click handler code here
         var $target = $(e.currentTarget);
         var buttonText = $target.text();
-        // Example: Show result
-        if ($('#controller-result').length) {
-            var message = trans('messages.button_clicked', {button: buttonText});
-            $('#controller-result').html(message).removeClass('d-none');
-        }
+        return view('button-result', '#controller-result', compact('buttonText'));
     }
 
     /**
@@ -59,7 +55,6 @@ class ButtonController extends Controller {
     public function onChange(e) {
         // Your change handler code here
         var $target = $(e.currentTarget);
-        console.log('Changed:', $target.val());
     }
 
     /**
@@ -75,16 +70,23 @@ class ButtonController extends Controller {
     public function onBlur(e) {
         // Your blur handler code here
     }
-
     /**
      * Handle hover event
      */
-    public function onHover(e) {
-        if (e.type === 'mouseenter') {
-            // Mouse entered
-        } else if (e.type === 'mouseleave') {
-            // Mouse left
-        }
+        public function onMouseEnter(e) {
+        // response is the AJAX promise from Route system (if route exists)
+        // Your mouseenter handler code here
+    }
+    /**
+     * Handle mouseleave event - Uses route system
+     */
+    public function onMouseLeave(e) {
+        // response is the AJAX promise from Route system (if route exists)
+        // var data = response->data;
+        // var success = response->success;
+        // var error = response->error;
+        // var status = response->status;
+        // Your mouseleave handler code here
     }
 }
 

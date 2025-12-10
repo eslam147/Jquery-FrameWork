@@ -17,7 +17,9 @@ class AjaxPostController extends Controller {
     public function selector() {
         return '#ajax-post-btn';
     }
-
+    public function openModal() {
+        return '';
+    }
     /**
      * Initialize controller (called automatically)
      */

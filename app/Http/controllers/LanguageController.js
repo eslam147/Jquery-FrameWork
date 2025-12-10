@@ -30,8 +30,7 @@ class LanguageController extends Controller {
         // Set locale in Framework translation module
         if (Framework.setLocale) {
             Framework.setLocale(locale);
-        }
-        
+        }        
         // Reload the page to apply language change
         window.location.reload(true);
         
