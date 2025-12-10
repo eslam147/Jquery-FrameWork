@@ -2,25 +2,19 @@
   publish = "."
   command = ""
 
-# Redirect root to main page
+# Redirect root to main page (rewrite, not redirect - keeps URL as /)
 [[redirects]]
   from = "/"
   to = "/resources/views/index.html"
   status = 200
 
-# Redirect example page
+# Redirect /example to example page
 [[redirects]]
   from = "/example"
   to = "/resources/views/example.html"
   status = 200
 
-# Serve static files from resources/views
-[[redirects]]
-  from = "/resources/views/*"
-  to = "/resources/views/:splat"
-  status = 200
-
-# Serve all other static files (vendor, app, lang, etc.)
+# Serve all static files (vendor, app, lang, routes, etc.)
 [[redirects]]
   from = "/*"
   to = "/:splat"
