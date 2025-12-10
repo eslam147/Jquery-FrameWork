@@ -293,10 +293,12 @@
                                     functionBody;
                                 try {
                                     var newFunc = new Function(paramNames.join(','), newFunctionBody);
-                                    // Use newFunc directly in closure - it will be captured automatically
-                                    func = function() {
-                                        return newFunc.apply(self, arguments);
-                                    };
+                                    // Use IIFE to properly capture newFunc in closure
+                                    (function(capturedFunc) {
+                                        func = function() {
+                                            return capturedFunc.apply(self, arguments);
+                                        };
+                                    })(newFunc);
                                 } catch (e) {
                                     // If fails, use original function
                                     func = originalFunc;
