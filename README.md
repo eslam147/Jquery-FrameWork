@@ -273,11 +273,7 @@ This method is used internally by the framework to determine which modal to open
 
 ```html
 <!-- resources/views/modal1.html -->
-@if(id)
 <div class="modal fade" id="modal1_{{ id }}" tabindex="-1" aria-labelledby="modal1Label" aria-hidden="true">
-@else
-<div class="modal fade" id="modal1" tabindex="-1" aria-labelledby="modal1Label" aria-hidden="true">
-@endif
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -295,7 +291,26 @@ This method is used internally by the framework to determine which modal to open
     </div>
 </div>
 ```
-
+```html
+<!-- resources/views/modal1.html without id -->
+<div class="modal fade" id="modal1" tabindex="-1" aria-labelledby="modal1Label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modal1Label">{{ __('messages.modal_1_title') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>{{ __('messages.modal_1_content') }}</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ __('messages.modal_1_close') }}</button>
+                <button type="button" class="btn btn-primary">{{ __('messages.modal_1_save') }}</button>
+            </div>
+        </div>
+    </div>
+</div>
+```
 ### How Modal System Works
 
 1. **View Rendering**: When you call `view('modal1', '#modal-content')`, the framework:
