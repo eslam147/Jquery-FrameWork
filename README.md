@@ -171,20 +171,15 @@ class ButtonController extends Controller {
         return '.button'; // or '#button' if created with --id
     }
     
-    public function onClick(e, id, variation_id = null) {
+    public function onClick(e,request,  id, variation_id = null) {
         // Access parameters directly from data-* attributes
         console.log('ID:', id);
         console.log('Variation ID:', variation_id);
-        
         // Or access via request object
         console.log('All data:', request->all());
         console.log('ID from request:', request->id);
-        
         // Use view helper to render templates
-        return view('welcome', '#result', compact('id', 'variation_id'));
-        
-        // Use view helper to open modals (automatically opens when view name contains 'modal')
-        return view('modal1', '#modal-content', compact('id'));
+        return view('welcome', '#result', compact('id', 'variation_id'));        
     }
 }
 ```
