@@ -293,10 +293,12 @@
                                     functionBody;
                                 try {
                                     var newFunc = new Function(paramNames.join(','), newFunctionBody);
-                                    var capturedNewFunc = newFunc; // Capture in closure
-                                    func = function() {
-                                        return capturedNewFunc.apply(self, arguments);
-                                    };
+                                    // Capture in closure immediately
+                                    func = (function(capturedFunc) {
+                                        return function() {
+                                            return capturedFunc.apply(self, arguments);
+                                        };
+                                    })(newFunc);
                                 } catch (e) {
                                     // If fails, use original function
                                     func = originalFunc;
@@ -553,10 +555,12 @@
                                         
                                         try {
                                             var newFunc = new Function(paramNames.join(','), newFunctionBody);
-                                            var capturedNewFunc = newFunc; // Capture in closure
-                                            func = function() {
-                                                return capturedNewFunc.apply(self, arguments);
-                                            };
+                                            // Capture in closure immediately
+                                            func = (function(capturedFunc) {
+                                                return function() {
+                                                    return capturedFunc.apply(self, arguments);
+                                                };
+                                            })(newFunc);
                                         } catch (e) {
                                             func = originalFunc;
                                         }
@@ -644,14 +648,16 @@
                                         // إنشاء function جديد باستخدام Function constructor
                                         try {
                                             var newFunc = new Function(paramNames.join(','), newFunctionBody);
-                                            var capturedNewFunc = newFunc; // Capture in closure
-                                            func = function() {
-                                                // التحقق من أن arguments[reqIndex] موجود
-                                                if (!arguments[reqIndex]) {
-                                                    // Request instance not found
-                                                }
-                                                return capturedNewFunc.apply(self, arguments);
-                                            };
+                                            // Capture in closure immediately
+                                            func = (function(capturedFunc) {
+                                                return function() {
+                                                    // التحقق من أن arguments[reqIndex] موجود
+                                                    if (!arguments[reqIndex]) {
+                                                        // Request instance not found
+                                                    }
+                                                    return capturedFunc.apply(self, arguments);
+                                                };
+                                            })(newFunc);
                                         } catch (e) {
                                             // إذا فشل، نستخدم الدالة الأصلية
                                             func = originalFunc;
