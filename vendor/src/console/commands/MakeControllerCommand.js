@@ -63,7 +63,76 @@ class MakeControllerCommand extends BaseCommand {
         // Write file
         this.writeFile(parsed.filePath, content);
 
+        // Add controller to boot.js automatically
+        this.addToBootJs(parsed);
+
         console.log('\x1b[32m✅ Controller created successfully: ' + parsed.filePath + '\x1b[0m');
+    }
+
+    /**
+     * Add controller to boot.js automatically
+     */
+    addToBootJs(parsed) {
+        const bootJsPath = path.join(process.cwd(), 'vendor/src/js/boot.js');
+        
+        if (!fs.existsSync(bootJsPath)) {
+            console.log('\x1b[33mWarning: boot.js not found, skipping auto-registration\x1b[0m');
+            return;
+        }
+
+        try {
+            let bootJsContent = fs.readFileSync(bootJsPath, 'utf8');
+            
+            // Calculate relative path from app/ to controller
+            // boot.js paths are relative to app/, so from app/Http/controllers/Modal1Controller.js
+            // the path should be: 'Http/controllers/Modal1Controller.js'
+            const relativePath = parsed.filePath.replace(/^app[\/\\]/, '').replace(/\\/g, '/');
+            
+            // Check if controller already exists
+            if (bootJsContent.includes(relativePath)) {
+                console.log('\x1b[33mInfo: Controller already registered in boot.js\x1b[0m');
+                return;
+            }
+            
+            // Find the Routes comment to insert before it
+            const routesCommentIndex = bootJsContent.indexOf('// Routes (must load after controllers)');
+            
+            if (routesCommentIndex === -1) {
+                console.log('\x1b[33mWarning: Could not find Routes comment in boot.js\x1b[0m');
+                return;
+            }
+            
+            // Find the last controller line before Routes comment
+            const beforeRoutes = bootJsContent.substring(0, routesCommentIndex);
+            const controllerPattern = /(\s+)(['"])(Http\/controllers\/[^'"]+\.js)\2,?\s*\n/g;
+            const lastControllerMatch = [...beforeRoutes.matchAll(controllerPattern)].pop();
+            
+            if (lastControllerMatch) {
+                // Insert after last controller
+                const insertIndex = lastControllerMatch.index + lastControllerMatch[0].length;
+                const indent = lastControllerMatch[1];
+                const newLine = indent + "'" + relativePath + "',\n";
+                bootJsContent = bootJsContent.slice(0, insertIndex) + newLine + bootJsContent.slice(insertIndex);
+            } else {
+                // If no controllers found, add after LanguageController line
+                const languageControllerIndex = bootJsContent.indexOf("'Http/controllers/LanguageController.js'");
+                if (languageControllerIndex !== -1) {
+                    const insertIndex = bootJsContent.indexOf('\n', languageControllerIndex) + 1;
+                    const indent = '        ';
+                    const newLine = indent + "'" + relativePath + "',\n";
+                    bootJsContent = bootJsContent.slice(0, insertIndex) + newLine + bootJsContent.slice(insertIndex);
+                } else {
+                    console.log('\x1b[33mWarning: Could not find insertion point in boot.js\x1b[0m');
+                    return;
+                }
+            }
+            
+            // Write updated boot.js
+            fs.writeFileSync(bootJsPath, bootJsContent, 'utf8');
+            console.log('\x1b[32m✅ Controller added to boot.js automatically\x1b[0m');
+        } catch (error) {
+            console.log('\x1b[33mWarning: Failed to update boot.js: ' + error.message + '\x1b[0m');
+        }
     }
 
     /**

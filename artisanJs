@@ -36,6 +36,12 @@ class ArtisanJs {
         
         // make:view command
         this.commands['make:view'] = require('./vendor/src/console/commands/MakeViewCommand');
+        
+        // delete:request command
+        this.commands['delete:request'] = require('./vendor/src/console/commands/DeleteRequestCommand');
+        
+        // delete:controller command
+        this.commands['delete:controller'] = require('./vendor/src/console/commands/DeleteControllerCommand');
     }
 
     /**
@@ -90,6 +96,14 @@ class ArtisanJs {
         console.log(colors.green + '  make:controller <Name>' + colors.reset);
         console.log('    Create a new Controller class');
         console.log('    Example: node artisanJs make:controller ButtonController\n');
+        
+        console.log(colors.green + '  delete:request <Name>' + colors.reset);
+        console.log('    Delete a Request class and remove it from boot.js');
+        console.log('    Example: node artisanJs delete:request UserRequest\n');
+        
+        console.log(colors.green + '  delete:controller <Name>' + colors.reset);
+        console.log('    Delete a Controller class and remove it from boot.js');
+        console.log('    Example: node artisanJs delete:controller ButtonController\n');
         
         console.log(colors.green + '  --help' + colors.reset);
         console.log('    Show this message\n');

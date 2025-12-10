@@ -26,9 +26,8 @@
     
     // Configuration - All files to load in order
     var files = [
-        // jQuery (CDN)
-        'https://code.jquery.com/jquery-3.6.0.min.js',
-        // Core (in vendor/src/core, relative to app/)
+        // jQuery (CDN) - Skip if already loaded
+        // 'https://code.jquery.com/jquery-3.6.0.min.js', // Load jQuery separately before boot.js
         '../vendor/src/core/framework.js',
         '../vendor/src/core/cache.js',
         '../vendor/src/core/logger.js',
@@ -68,6 +67,8 @@
         'Http/controllers/AjaxGetController.js',
         'Http/controllers/AjaxPostController.js',
         'Http/controllers/LanguageController.js',
+        'Http/controllers/Modal1Controller.js',
+        'Http/controllers/Modal2Controller.js',
         // Routes (must load after controllers)
         '../routes/web.js',
         // Start (in vendor/src/js, relative to app/)
@@ -385,13 +386,37 @@
         
         var filePath = basePath + files[index];
         
+        // Skip jQuery if already loaded
+        if (files[index] && files[index].indexOf('jquery') !== -1 && typeof window.jQuery !== 'undefined') {
+            loadAll(index + 1);
+            return;
+        }
+        
         loadScript(files[index], function() {
             loadAll(index + 1);
         });
     }
     
-    // Start loading
-    loadAll(0);
+    // Start loading (only if jQuery is already loaded, otherwise wait)
+    if (typeof window.jQuery !== 'undefined') {
+        loadAll(0);
+    } else {
+        // Wait for jQuery to load
+        var checkJQuery = setInterval(function() {
+            if (typeof window.jQuery !== 'undefined') {
+                clearInterval(checkJQuery);
+                loadAll(0);
+            }
+        }, 50);
+        
+        // Timeout after 5 seconds
+        setTimeout(function() {
+            clearInterval(checkJQuery);
+            if (typeof window.jQuery === 'undefined') {
+                console.error('jQuery not loaded. Please load jQuery before boot.js');
+            }
+        }, 5000);
+    }
     
 })();
 

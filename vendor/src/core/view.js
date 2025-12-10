@@ -23,6 +23,13 @@
      */
     Framework.view = function(viewName, selector, data) {
         data = data || {};
+        // Remove d-none from selector immediately
+        if (selector) {
+            var $selectorElement = $(selector);
+            if ($selectorElement.length > 0) {
+                $selectorElement.removeClass('d-none');
+            }
+        }
         
         // تحويل اسم الـ view إلى مسار الملف
         // حساب المسار النسبي بناءً على موقع الصفحة الحالية
@@ -36,7 +43,70 @@
         // إذا كان الـ view موجود في cache، نستخدمه مباشرة
         if (Framework._viewCache && Framework._viewCache[viewPath]) {
             var rendered = Framework._renderView(Framework._viewCache[viewPath], data);
-            $(selector).html(rendered).show();
+            var $target = $(selector);
+            if ($target.length > 0) {
+                // Remove d-none first, then set content and show
+                $target.removeClass('d-none');
+                $target.html(rendered);
+                $target.show();
+                
+                // Auto-open modal if view name contains 'modal'
+                if (viewName.indexOf('modal') !== -1) {
+                    // Extract modal name from view name (e.g., 'modal1' from 'modal1')
+                    var modalName = viewName.replace(/[^a-z0-9_]/gi, '');
+                    
+                    // Try to find modal inside rendered content first (by ID pattern modal1 or modal1_id)
+                    var $modal = $target.find('.modal, #' + modalName + ', #' + modalName + '_' + (data.id || ''));
+                    
+                    // If modal not found in target, try to find it in document
+                    if ($modal.length === 0) {
+                        // Try to find modal in document by ID
+                        $modal = $('#' + modalName);
+                        if ($modal.length === 0 && data.id) {
+                            $modal = $('#' + modalName + '_' + data.id);
+                        }
+                    }
+                    if ($modal.length === 0) {
+                        $modal = $('.' + modalName);
+                    }
+                    
+                    // Open modal if found - Support Bootstrap 5
+                    if ($modal.length > 0) {
+                        // Small delay to ensure DOM is ready
+                        setTimeout(function() {
+                            // Try Bootstrap 5 first (using Modal class)
+                            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                                // Get existing instance or create new one
+                                var existingInstance = bootstrap.Modal.getInstance($modal[0]);
+                                if (existingInstance) {
+                                    // Dispose old instance first
+                                    existingInstance.dispose();
+                                }
+                                // Create new instance every time
+                                var modalInstance = new bootstrap.Modal($modal[0], {
+                                    backdrop: true,
+                                    keyboard: true
+                                });
+                                modalInstance.show();
+                            }
+                            // Fallback to Bootstrap 4/jQuery
+                            else if (typeof $modal.modal === 'function') {
+                                $modal.modal('show');
+                            }
+                            // Fallback to custom
+                            else {
+                                $modal.show().css('display', 'block');
+                                if (!$('body').find('.modal-backdrop').length) {
+                                    $('body').append('<div class="modal-backdrop fade show"></div>');
+                                }
+                                if (!$modal.hasClass('modal-open')) {
+                                    $modal.addClass('modal-open');
+                                }
+                            }
+                        }, 50);
+                    }
+                }
+            }
             return;
         }
         
@@ -54,7 +124,119 @@
             // عرض الـ view في العنصر المحدد
             var $target = $(selector);
             if ($target.length > 0) {
-                $target.html(rendered).show();
+                // Remove d-none first, then set content and show
+                $target.removeClass('d-none');
+                $target.html(rendered);
+                $target.show();
+                
+                // Auto-open modal if view name contains 'modal'
+                // Keep modal in the specified selector, don't move to body
+                if (viewName.indexOf('modal') !== -1) {
+                    // Extract modal name from view name (e.g., 'modal1' from 'modal1')
+                    var modalName = viewName.replace(/[^a-z0-9_]/gi, '');
+                    
+                    // Try to find modal inside rendered content first (by ID pattern modal1 or modal1_id)
+                    var $modal = $target.find('.modal, #' + modalName + ', #' + modalName + '_' + (data.id || ''));
+                    
+                    // If modal not found in target, try to find it in document
+                    if ($modal.length === 0) {
+                        // Try to find modal in document by ID
+                        $modal = $('#' + modalName);
+                        if ($modal.length === 0 && data.id) {
+                            $modal = $('#' + modalName + '_' + data.id);
+                        }
+                    }
+                    if ($modal.length === 0) {
+                        $modal = $('.' + modalName);
+                    }
+                    
+                    // Open modal if found - Support Bootstrap 5
+                    if ($modal.length > 0) {
+                        // Function to load Bootstrap if not loaded
+                        function loadBootstrapIfNeeded(callback) {
+                            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                                callback();
+                                return;
+                            }
+                            
+                            // Check if Bootstrap script is already loading
+                            if (document.querySelector('script[src*="bootstrap"]')) {
+                                // Wait for it to load
+                                var checkBootstrap = setInterval(function() {
+                                    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                                        clearInterval(checkBootstrap);
+                                        callback();
+                                    }
+                                }, 50);
+                                setTimeout(function() { clearInterval(checkBootstrap); }, 5000);
+                                return;
+                            }
+                            
+                            // Load Bootstrap dynamically
+                            var bootstrapScript = document.createElement('script');
+                            bootstrapScript.src = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js';
+                            bootstrapScript.onload = function() {
+                                callback();
+                            };
+                            bootstrapScript.onerror = function() {
+                                // Fallback to custom modal
+                                callback();
+                            };
+                            document.body.appendChild(bootstrapScript);
+                        }
+                        
+                        // Function to open modal
+                        function openModalNow() {
+                            loadBootstrapIfNeeded(function() {
+                                // Try Bootstrap 5 first (using Modal class)
+                                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                                    try {
+                                        // Get existing instance or create new one
+                                        var existingInstance = bootstrap.Modal.getInstance($modal[0]);
+                                        if (existingInstance) {
+                                            // Dispose old instance first
+                                            existingInstance.dispose();
+                                        }
+                                        // Create new instance every time
+                                        var modalInstance = new bootstrap.Modal($modal[0], {
+                                            backdrop: true,
+                                            keyboard: true
+                                        });
+                                        modalInstance.show();
+                                    } catch (e) {
+                                        console.error('Bootstrap Modal error:', e);
+                                        // Fallback to custom
+                                        $modal.show().css('display', 'block');
+                                        if (!$('body').find('.modal-backdrop').length) {
+                                            $('body').append('<div class="modal-backdrop fade show"></div>');
+                                        }
+                                        if (!$modal.hasClass('modal-open')) {
+                                            $modal.addClass('modal-open');
+                                        }
+                                    }
+                                }
+                                // Fallback to Bootstrap 4/jQuery
+                                else if (typeof $modal.modal === 'function') {
+                                    $modal.modal('show');
+                                }
+                                // Fallback to custom
+                                else {
+                                    $modal.show().css('display', 'block');
+                                    // Add backdrop
+                                    if (!$('body').find('.modal-backdrop').length) {
+                                        $('body').append('<div class="modal-backdrop fade show"></div>');
+                                    }
+                                    if (!$modal.hasClass('modal-open')) {
+                                        $modal.addClass('modal-open');
+                                    }
+                                }
+                            });
+                        }
+                        
+                        // Small delay to ensure DOM is ready
+                        setTimeout(openModalNow, 50);
+                    }
+                }
             }
         });
     };
@@ -100,7 +282,6 @@
      */
     Framework._renderView = function(template, data) {
         var html = template;
-        
         // استبدال @if conditions أولاً (قبل المتغيرات)
         html = Framework._processIfStatements(html, data);
         
@@ -125,7 +306,6 @@
             }
             return String(value);
         });
-        
         return html;
     };
 
@@ -341,7 +521,6 @@
         render: Framework.view,
         compact: Framework.compact
     });
-
     // Make compact available globally - مثل Laravel
     window.compact = Framework.compact;
 

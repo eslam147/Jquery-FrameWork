@@ -1,173 +1,148 @@
 <!DOCTYPE html>
-<html>
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ __('messages.framework_title') }} - {{ __('messages.examples') }} {{ __('messages.version') }}</title>
-    <style id="html-translator-hide-style">
-        /* Hide body until translation is processed */
-        body { visibility: hidden !important; opacity: 0 !important; }
-    </style>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f5f5;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-        
-        .section {
-            margin-bottom: 40px;
-            padding: 20px;
-            background: #f9f9f9;
-            border-radius: 8px;
-            border-right: 4px solid #007bff;
-        }
-        
-        .section h2 {
-            color: #007bff;
-            margin-bottom: 15px;
-        }
-        
-        .info {
-            background: #e7f3ff;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 15px 0;
-            border-right: 4px solid #007bff;
-        }
-        
-        button {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 5px;
-            font-size: 14px;
-        }
-        .d-none {
-            display: none;
-        }
-        button:hover {
-            background: #0056b3;
-        }
-        
-        .language-switcher.active {
-            background: #ffc107 !important;
-            color: #000 !important;
-            font-weight: bold;
-        }
-        
-        input, textarea, select {
-            width: 100%;
-            padding: 10px;
-            margin: 5px 0;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-        
-        input[type="file"] {
-            cursor: pointer;
-            padding: 8px;
-        }
-        
-        input[type="file"]:hover {
-            border-color: #007bff;
-        }
-        
-        .demo-box {
-            background: #e9ecef;
-            padding: 20px;
-            border-radius: 5px;
-            margin: 10px 0;
-        }
-        
-        .result {
-            background: #d4edda;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 10px 0;
-            border-right: 4px solid #28a745;
-        }
-        
-        .error {
-            border-color: #dc3545 !important;
-            background: #fff5f5 !important;
-        }
-        
-        .error-message {
-            color: #dc3545;
-            font-size: 12px;
-            margin-top: 5px;
-            display: block;
-        }
-    </style>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/test/vendor/src/css/style.css">
 </head>
-<body>
-    <div class="container" data-id="10" data-product-id="100" name="test3">
-        <!-- Language Switcher -->
-        <div style="text-align: right; margin-bottom: 20px;">
-            <button class="language-switcher btn" data-locale="ar" style="background: #28a745; margin-left: 10px;">العربية</button>
-            <button class="language-switcher btn" data-locale="en" style="background: #007bff;">English</button>
-        </div>
-        <h1>🚀 {{ __('messages.framework_title') }} - {{ __('messages.examples') }} {{ __('messages.version') }}</h1>
-        <div class="section" data-id="7" data-product-id="70" name="test2">
-            <div class="demo-box" data-id="5" data-product-id="50" name="test">
-                <button data-id="1" data-variation-id="10" class="btn jqfw-btn">{{ __('messages.click_here') }}</button>
-                <button data-id="2" data-variation-id="20" class="btn jqfw-btn">{{ __('messages.another_button') }}</button>
+<body class="bg-light">
+    <div class="container py-4" data-id="10" data-product-id="100" name="test3">
+        <!-- Header -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header text-white">
+                <div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+                    <h1 class="mb-0">
+                        <i class="fas fa-rocket"></i> {{ __('messages.framework_title') }}
+                    </h1>
+                    <!-- Language Switcher -->
+                    <div class="btn-group" role="group">
+                        <button class="language-switcher btn btn-success" data-locale="ar">
+                            <i class="fas fa-language"></i> العربية
+                        </button>
+                        <button class="language-switcher btn btn-success" data-locale="en">
+                            <i class="fas fa-language"></i> English
+                        </button>
+                    </div>
+                </div>
+                <p class="text-center mb-0 text-dark">
+                    <i class="fas fa-code"></i> {{ __('messages.examples') }} {{ __('messages.version') }}
+                </p>
             </div>
-            <div class="result d-none" id="controller-result"></div>
         </div>
-        <div class="section">
-            <h2>2. {{ __('messages.forms') }}</h2>            
-            <form id="demo-form" enctype="multipart/form-data">
-                <input type="text" name="name" placeholder="{{ __('messages.name') }}">
-                <input type="email" name="email" placeholder="{{ __('messages.email') }}">
-                <button type="submit">{{ __('messages.submit') }}</button>
-            </form>
-            <div class="result d-none" id="form-result"></div>
+
+        <!-- Section 1: Controller Examples -->
+        <div class="card mb-3 shadow-sm" data-id="7" data-product-id="70" name="test2">
+            <div class="card-header bg-info text-white">
+                <h2 class="mb-0">
+                    <i class="fas fa-mouse-pointer"></i> 1. {{ __('messages.click_here') }}
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="bg-light p-3 rounded mb-3" data-id="5" data-product-id="50" name="test">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button data-id="1" data-variation-id="10" class="btn btn-primary jqfw-btn">
+                            <i class="fas fa-hand-pointer"></i> {{ __('messages.click_here') }}
+                        </button>
+                        <button data-id="2" data-variation-id="20" class="btn btn-success jqfw-btn">
+                            <i class="fas fa-mouse"></i> {{ __('messages.another_button') }}
+                        </button>
+                    </div>
+                </div>
+                <div class="alert alert-success d-none" id="controller-result" role="alert"></div>
+            </div>
+        </div>
+
+        <!-- Section 2: Forms -->
+        <div class="card mb-3 shadow-sm">
+            <div class="card-header bg-success text-white">
+                <h2 class="mb-0">
+                    <i class="fas fa-file-alt"></i> 2. {{ __('messages.forms') }}
+                </h2>
+            </div>
+            <div class="card-body">
+                <form id="demo-form" enctype="multipart/form-data" class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">{{ __('messages.name') }}</label>
+                        <input type="text" name="name" class="form-control" placeholder="{{ __('messages.name') }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{{ __('messages.email') }}</label>
+                        <input type="email" name="email" class="form-control" placeholder="{{ __('messages.email') }}">
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> {{ __('messages.submit') }}
+                        </button>
+                    </div>
+                </form>
+                <div class="alert alert-success d-none mt-3" id="form-result" role="alert"></div>
+            </div>
         </div>
         
-        <div class="section">
-            <h2>3. {{ __('messages.ajax_examples_route_system') }}</h2>
-            <div class="info">
-                <p><strong>{{ __('messages.example_laravel_syntax') }}</strong> <code>Ajax::get(url, elementReturn)</code></p>
-                <p>{{ __('messages.click_buttons_test_ajax') }}</p>
+        <!-- Section 3: AJAX Examples -->
+        <div class="card mb-3 shadow-sm">
+            <div class="card-header bg-warning text-dark">
+                <h2 class="mb-0">
+                    <i class="fas fa-exchange-alt"></i> 3. {{ __('messages.ajax_examples_route_system') }}
+                </h2>
             </div>
-            <div class="demo-box">
-                <button class="btn" id="ajax-get-btn" style="background: #28a745;">{{ __('messages.test_get_request') }}</button>
-                <button class="btn" id="ajax-post-btn" style="background: #17a2b8;">{{ __('messages.test_post_request') }}</button>
+            <div class="card-body">
+                <div class="alert alert-info mb-3">
+                    <p class="mb-2">
+                        <strong><i class="fas fa-info-circle"></i> {{ __('messages.example_laravel_syntax') }}</strong>
+                    </p>
+                    <code>Route::get(url, elementReturn)</code>
+                    <p class="mt-2 mb-0">{{ __('messages.click_buttons_test_ajax') }}</p>
+                </div>
+                <div class="bg-light p-3 rounded mb-3">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button class="btn btn-success" id="ajax-get-btn">
+                            <i class="fas fa-download"></i> {{ __('messages.test_get_request') }}
+                        </button>
+                        <button class="btn btn-info" id="ajax-post-btn">
+                            <i class="fas fa-upload"></i> {{ __('messages.test_post_request') }}
+                        </button>
+                    </div>
+                </div>
+                <div class="alert alert-secondary" id="ajax-result" role="alert">
+                    <p class="text-muted text-center mb-0">
+                        <i class="fas fa-spinner fa-spin"></i> {{ __('messages.ajax_results_will_appear') }}
+                    </p>
+                </div>
             </div>
-            <div class="result" id="ajax-result" style="min-height: 50px; padding: 15px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; margin-top: 15px;">
-                <p style="color: #6c757d; margin: 0;">{{ __('messages.ajax_results_will_appear') }}</p>
+        </div>
+        
+        <!-- Section 4: Modal Examples -->
+        <div class="card mb-3 shadow-sm">
+            <div class="card-header bg-danger text-white">
+                <h2 class="mb-0">
+                    <i class="fas fa-window-restore"></i> 4. {{ __('messages.modal_examples') }}
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="bg-light p-3 rounded mb-3">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button class="btn btn-warning" data-id="1" id="modal1">
+                            <i class="fas fa-window-maximize"></i> {{ __('messages.modal_1') }}
+                        </button>
+                        <button class="btn btn-danger" id="modal2">
+                            <i class="fas fa-window-restore"></i> {{ __('messages.modal_2') }}
+                        </button>
+                    </div>
+                </div>
+                <div id="modal-content"></div>
             </div>
         </div>
     </div>
-    <!-- Framework - Load boot.js -->
+    <!-- jQuery (must load first) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Framework - Load boot.js (must load after jQuery) -->
     <script src="/test/vendor/src/js/boot.js?v=1.0.0"></script>
+    <!-- Bootstrap 5 JS will be loaded dynamically when needed for modals -->
 </body>
 </html>

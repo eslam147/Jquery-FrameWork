@@ -117,7 +117,6 @@
                 
                 // Add view helper function
                 var viewHelper = 'var view = function(viewName, selector, data) { return Framework.view(viewName, selector, data); }; ';
-                
                 // Add compact helper function
                 var compactHelper = 'var compact = function() { var varNames = Array.prototype.slice.call(arguments); var result = {}; for (var i = 0; i < varNames.length; i++) { var name = varNames[i]; try { result[name] = eval(name); } catch(e) {} } return result; }; ';
                 

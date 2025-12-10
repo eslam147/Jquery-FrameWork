@@ -35,18 +35,13 @@ class ButtonController extends Controller {
      */
     public function onClick(e, request) {
         // Test parameters from data attributes
-        console.log('all:', request->all());
-        console.log('id:', request->id);
-        console.log('variation_id:', request->variation_id);
-        
         // Your click handler code here
         var $target = $(e.currentTarget);
         var buttonText = $target.text();
-        
         // Example: Show result
         if ($('#controller-result').length) {
             var message = trans('messages.button_clicked', {button: buttonText});
-            $('#controller-result').html(message).show();
+            $('#controller-result').html(message).removeClass('d-none');
         }
     }
 

@@ -49,6 +49,15 @@ return {
     loading: 'Loading...',
     version: 'v0.1',
     switch_language: 'Switch Language',
-    language: 'Language'
+    language: 'Language',
+    modal_examples: 'Modal Examples',
+    modal_1: 'Modal 1 contains Id',
+    modal_2: 'Modal 2',
+    modal_1_title: 'Modal 1',
+    modal_1_content: 'This is Modal 1 content. You can add any content you want here.',
+    modal_2_title: 'Modal 2',
+    modal_2_content: 'This is Modal 2 content. You can add any content you want here.',
+    close: 'Close',
+    save: 'Save'
 }
 

@@ -38,7 +38,6 @@
             if (typeof this.selector === 'function') {
                 selector = this.selector();
             }
-            
             if (!selector) {
                 return;
             }
@@ -48,7 +47,6 @@
 
             var $elements = $(selector);
             this._selector = selector; // Store for later use
-
             // Bind events
             this.bindEvents();
 
@@ -264,35 +262,48 @@
                     (function(methodName, shouldPreventDefault, requestClass, func, params, reqIndex, hasRequestLowercase, eventIndex) {
                         // إضافة view و compact helper functions للدوال التي لا تحتوي على Request
                         if (!requestClass && !hasRequestLowercase) {
-                            // Use simpler approach: wrap the function directly
+                            // Use Function constructor to inject view and compact into function scope
                             var originalFunc = func;
-                            func = function() {
+                            var funcStr = originalFunc.toString();
+                            var bodyMatch = funcStr.match(/\{([\s\S]*)\}$/);
+                            
+                            if (bodyMatch) {
+                                var functionBody = bodyMatch[1];
+                                var paramNames = params.map(function(p) { return p.trim(); });
+                                
                                 // Add $target automatically if event parameter exists
-                                if (eventIndex >= 0 && arguments[eventIndex]) {
-                                    var $target = $(arguments[eventIndex].currentTarget || arguments[eventIndex]);
+                                var targetVar = '';
+                                if (eventIndex >= 0) {
+                                    targetVar = 'var $target = $(arguments[' + eventIndex + '].currentTarget || arguments[' + eventIndex + ']); ';
                                 }
                                 
-                                // Add view helper
-                                var view = function(viewName, selector, data) {
-                                    return Framework.view(viewName, selector, data);
-                                };
-                                
-                                // Add compact helper
-                                var compact = function() {
-                                    var varNames = Array.prototype.slice.call(arguments);
-                                    var result = {};
-                                    for (var i = 0; i < varNames.length; i++) {
-                                        var name = varNames[i];
-                                        try { 
-                                            result[name] = eval(name); 
-                                        } catch(e) {} 
-                                    }
-                                    return result;
-                                };
-                                
-                                // Call original function with proper context
-                                return originalFunc.apply(self, arguments);
+                                var newFunctionBody = targetVar +
+                                    'var view = function(viewName, selector, data) { ' +
+                                    'return Framework.view(viewName, selector, data); ' +
+                                    '}; ' +
+                                    'var compact = function() { ' +
+                                    'var varNames = Array.prototype.slice.call(arguments); ' +
+                                    'var result = {}; ' +
+                                    'for (var i = 0; i < varNames.length; i++) { ' +
+                                    'var name = varNames[i]; ' +
+                                    'try { result[name] = eval(name); } catch(e) {} ' +
+                                    '} ' +
+                                    'return result; ' +
+                                    '}; ' +
+                                    functionBody;
+                                try {
+                                    var newFunc = new Function(paramNames.join(','), newFunctionBody);
+                                    func = function() {
+                                        return newFunc.apply(self, arguments);
                                     };
+                                } catch (e) {
+                                    // If fails, use original function
+                                    func = originalFunc;
+                                }
+                            } else {
+                                // Fallback: use original function
+                                func = originalFunc;
+                            }
                         }
                         
                         var handler = function(e) {
@@ -803,7 +814,41 @@
                                     // Return the promise so it can be chained if needed
                                     return result;
                                 } else {
-                                    // No route found, call handler normally (without response parameter)
+                                    // No route found, check if we should auto-open modal
+                                    // Extract modal name from controller selector (e.g., '#modal1' -> 'modal1')
+                                    var controllerSelector = self._selector || self.selector;
+                                    $(controllerSelector).removeClass('d-none');
+                                    if (typeof controllerSelector === 'function') {
+                                        controllerSelector = controllerSelector();
+                                    }
+                                    
+                                    // Check if selector is a modal (starts with #modal or .modal)
+                                    var modalMatch = null;
+                                    if (controllerSelector) {
+                                        // Match #modal1, .modal1, #modal_5, .modal_7, etc.
+                                        modalMatch = controllerSelector.match(/^[#.](modal[\w]*)/);
+                                    }
+                                    
+                                    // Also check for data-modal attribute on clicked element
+                                    if (!modalMatch) {
+                                        var dataModal = $target.attr('data-modal');
+                                        if (dataModal) {
+                                            modalMatch = [null, dataModal];
+                                        }
+                                    }
+                        
+                                    // If modal found, auto-open it automatically from onClick
+                                    if (modalMatch && modalMatch[1]) {
+                                        var modalName = modalMatch[1];
+                                        
+                                        // Call openModal with event - it will get dataId automatically from onClick event
+                                        // Use window.openModal directly since it's guaranteed to exist
+                                        if (typeof window.openModal === 'function') {
+                                            window.openModal(modalName, e);
+                                        }
+                                    }
+                                    
+                                    // Call handler normally (without response parameter)
                                     return handler.call(this, e);
                                 }
                             };
@@ -1464,7 +1509,7 @@
          */
         $: function(selector) {
             if (selector) {
-                return $(selector);
+                return $(selector).removeClass('d-none');
             }
             return $(this.selector);
         },
@@ -1509,6 +1554,56 @@
             }
             
             return result;
+        },
+
+        /**
+         * Open modal by name - just write modal name
+         * Usage: this.openModal('modal_5', e) - just write modal name
+         * If element has data-id, it will be automatically added as _id to modal selector
+         * @param {string} modal - Modal name (e.g., 'modal_5', 'modal_7')
+         * @param {Event} e - Event object (optional, used to get data-id from clicked element)
+         */
+        openModal: function(modal, e) {
+            if (!modal) return;
+            
+            // Get data-id from clicked element if event is provided
+            // This gets the id from onClick event as user requested
+            var dataId = (e && e.currentTarget) ? $(e.currentTarget).attr('data-id') || $(e.currentTarget).data('id') : null;
+            
+            // Build final modal selector - simple, just modal name with data-id if exists
+            var finalModalSelector = dataId ? modal + '_' + dataId : modal;
+            var $modal = $(finalModalSelector);
+            // Open modal - Support Bootstrap 5
+            if ($modal.length > 0) {
+                // Try Bootstrap 5 first (using Modal class)
+                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    // Get existing instance or create new one
+                    var existingInstance = bootstrap.Modal.getInstance($modal[0]);
+                    if (existingInstance) {
+                        // Dispose old instance first
+                        existingInstance.dispose();
+                    }
+                    // Create new instance every time
+                    var modalInstance = new bootstrap.Modal($modal[0], {
+                        backdrop: true,
+                        keyboard: true
+                    });
+                    modalInstance.show();
+                }
+                // Fallback to Bootstrap 4/jQuery
+                else if (typeof $modal.modal === 'function') {
+                    $modal.modal('show');
+                }
+                // Fallback to custom
+                else {
+                    $modal.show().css('display', 'block');
+                    if (!$modal.hasClass('modal-open')) {
+                        $modal.addClass('modal-open');
+                    }
+                }
+            } else {
+                console.warn('Modal not found: ' + finalModalSelector);
+            }
         },
 
         /**
@@ -1606,6 +1701,58 @@
     
     // Make Controller available globally (Laravel-like)
     window.Controller = Controller;
+    
+    /**
+     * Global openModal function - متاح في templates و HTML
+     * Usage: openModal('modal_5', event) - just write modal name, method handles # or . automatically
+     * If element has data-id, it will be automatically added as _id to modal selector
+     * @param {string} modal - Modal name (e.g., 'modal_5', 'modal_7') - method tries # first, then .
+     * @param {Event} e - Event object (optional, used to get data-id from clicked element)
+     */
+    window.openModal = function(modal, e) {
+        if (!modal) return;
+        // Get data-id from clicked element if event is provided
+        // This gets the id from onClick event as user requested
+        var dataId = (e && e.currentTarget) ? $(e.currentTarget).attr('data-id') || $(e.currentTarget).data('id') : null;
+        
+        // Build final modal selector - simple, just modal name with data-id if exists
+        var finalModalSelector = dataId ? modal + '_' + dataId : modal;
+        var $modal = $(finalModalSelector);
+        // Open modal - Support Bootstrap 5
+        if ($modal.length > 0) {
+            // Try Bootstrap 5 first (using Modal class)
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                // Get existing instance or create new one
+                var existingInstance = bootstrap.Modal.getInstance($modal[0]);
+                if (existingInstance) {
+                    // Dispose old instance first
+                    existingInstance.dispose();
+                }
+                // Create new instance every time
+                var modalInstance = new bootstrap.Modal($modal[0], {
+                    backdrop: true,
+                    keyboard: true
+                });
+                modalInstance.show();
+            }
+            // Fallback to Bootstrap 4/jQuery
+            else if (typeof $modal.modal === 'function') {
+                $modal.modal('show');
+            }
+            // Fallback to custom
+            else {
+                $modal.show().css('display', 'block');
+                if (!$modal.hasClass('modal-open')) {
+                    $modal.addClass('modal-open');
+                }
+            }
+        } else {
+            console.warn('Modal not found: ' + finalModalSelector);
+        }
+    };
+    
+    // Also add to Framework for consistency
+    Framework.openModal = window.openModal;
 
 })(window.Framework || {});
 
