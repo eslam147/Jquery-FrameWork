@@ -1,3 +1,3 @@
 function view(viewName, container, compact) {
-    console.log(123);
+    return Framework.view(viewName, container, compact);
 }
