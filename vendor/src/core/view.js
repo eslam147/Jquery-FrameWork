@@ -523,6 +523,7 @@
     });
     // Make compact available globally - مثل Laravel
     window.compact = Framework.compact;
+    window.view = Framework.view;
 
 })(window.Framework || {});
 
