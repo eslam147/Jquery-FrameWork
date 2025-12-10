@@ -552,6 +552,8 @@
                                             functionBody;
                                         
                                         try {
+                                            console.log(paramNames.join(','));
+                                            console.log(newFunctionBody);
                                             var newFunc = new Function(paramNames.join(','), newFunctionBody);
                                             // Use newFunc directly in closure - it will be captured automatically
                                             func = function() {
