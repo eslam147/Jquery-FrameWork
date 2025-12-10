@@ -528,43 +528,54 @@
                                     var originalFunc = func;
                                     var funcStr = originalFunc.toString();
                                     var bodyMatch = funcStr.match(/\{([\s\S]*)\}$/);
-                                    if (bodyMatch) {
-                                        var functionBody = bodyMatch[1];
-                                        var paramNames = params.map(function(p) { return p.trim(); });
+                                    console.log(bodyMatch);
+                                    console.log(originalFunc);
+                                    console.log(funcStr);
+                                    console.log(params);
+                                    console.log(eventIndex);
+                                    console.log(reqIndex);
+                                    console.log(dataAttributes);
+                                    console.log(args);
+                                    console.log(self);
+                                    console.log(e);
+                                    console.log(requestObj);
+                                    // if (bodyMatch) {
+                                    //     var functionBody = bodyMatch[1];
+                                    //     var paramNames = params.map(function(p) { return p.trim(); });
                                         
-                                        var targetVar = '';
-                                        if (eventIndex >= 0) {
-                                            targetVar = 'var $target = $(arguments[' + eventIndex + '].currentTarget || arguments[' + eventIndex + ']); ';
-                                        }
+                                    //     var targetVar = '';
+                                    //     if (eventIndex >= 0) {
+                                    //         targetVar = 'var $target = $(arguments[' + eventIndex + '].currentTarget || arguments[' + eventIndex + ']); ';
+                                    //     }
                                         
-                                        var newFunctionBody = 'var request = arguments[' + reqIndex + ']; ' +
-                                            targetVar +
-                                            'var view = function(viewName, selector, data) { ' +
-                                            'return Framework.view(viewName, selector, data); ' +
-                                            '}; ' +
-                                            'var compact = function() { ' +
-                                            'var varNames = Array.prototype.slice.call(arguments); ' +
-                                            'var result = {}; ' +
-                                            'for (var i = 0; i < varNames.length; i++) { ' +
-                                            'var name = varNames[i]; ' +
-                                            'try { result[name] = eval(name); } catch(e) {} ' +
-                                            '} ' +
-                                            'return result; ' +
-                                            '}; ' +
-                                            functionBody;
+                                    //     var newFunctionBody = 'var request = arguments[' + reqIndex + ']; ' +
+                                    //         targetVar +
+                                    //         'var view = function(viewName, selector, data) { ' +
+                                    //         'return Framework.view(viewName, selector, data); ' +
+                                    //         '}; ' +
+                                    //         'var compact = function() { ' +
+                                    //         'var varNames = Array.prototype.slice.call(arguments); ' +
+                                    //         'var result = {}; ' +
+                                    //         'for (var i = 0; i < varNames.length; i++) { ' +
+                                    //         'var name = varNames[i]; ' +
+                                    //         'try { result[name] = eval(name); } catch(e) {} ' +
+                                    //         '} ' +
+                                    //         'return result; ' +
+                                    //         '}; ' +
+                                    //         functionBody;
                                         
-                                        try {
-                                            var newFunc = new Function(paramNames.join(','), newFunctionBody);
-                                            // Use IIFE to properly capture newFunc in closure
-                                            (function(capturedFunc) {
-                                                func = function() {
-                                                    return capturedFunc.apply(self, arguments);
-                                                };
-                                            })(newFunc);
-                                        } catch (e) {
-                                            func = originalFunc;
-                                        }
-                                    }
+                                    //     try {
+                                    //         var newFunc = new Function(paramNames.join(','), newFunctionBody);
+                                    //         // Use IIFE to properly capture newFunc in closure
+                                    //         (function(capturedFunc) {
+                                    //             func = function() {
+                                    //                 return capturedFunc.apply(self, arguments);
+                                    //             };
+                                    //         })(newFunc);
+                                    //     } catch (e) {
+                                    //         func = originalFunc;
+                                    //     }
+                                    // }
                                 }
                                 
                                 return func.apply(self, args);
