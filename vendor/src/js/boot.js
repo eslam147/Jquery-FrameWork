@@ -12,16 +12,32 @@
     var currentScript = scripts[scripts.length - 1];
     var scriptSrc = currentScript.src || currentScript.getAttribute('src');
     var basePath = '';
+    var projectRoot = '';
     
     if (scriptSrc) {
         // boot.js is in vendor/src/js/, so we need to go up to project root
         var scriptPath = scriptSrc.substring(0, scriptSrc.lastIndexOf('/'));
-        // Remove /vendor/src/js to get to project root, then add /app/
-        basePath = scriptPath.replace(/\/vendor\/src\/js$/, '') + '/app/';
+        // Remove /vendor/src/js to get to project root
+        projectRoot = scriptPath.replace(/\/vendor\/src\/js$/, '');
+        // For Netlify and other deployments, ensure we have the correct root
+        if (projectRoot.indexOf('http://') === -1 && projectRoot.indexOf('https://') === -1) {
+            // If it's a relative path, get absolute URL
+            var baseUrl = window.location.protocol + '//' + window.location.host;
+            projectRoot = baseUrl + (projectRoot.indexOf('/') === 0 ? '' : '/') + projectRoot;
+        }
+        basePath = projectRoot + '/app/';
     } else {
         // Fallback: try to get from document location
         var path = window.location.pathname;
-        basePath = path.substring(0, path.lastIndexOf('/') + 1) + 'app/';
+        // Get base URL
+        var baseUrl = window.location.protocol + '//' + window.location.host;
+        // Remove /resources/views/ or any subdirectory to get project root
+        projectRoot = baseUrl + path.replace(/\/resources\/views.*$/, '').replace(/\/[^\/]+\.html$/, '');
+        if (projectRoot === baseUrl + path) {
+            // If no match, use path up to last /
+            projectRoot = baseUrl + path.substring(0, path.lastIndexOf('/'));
+        }
+        basePath = projectRoot + '/app/';
     }
     
     // Configuration - All files to load in order
@@ -266,13 +282,12 @@
             fullPath = src;
         } else if (isRelativePath) {
             // For relative paths like ../vendor/src/js/config.js
-            // basePath is app/, so project root is one level up
-            // Remove ../ from the path and build from project root
-            var projectRoot = basePath.replace(/\/app\/$/, '');
+            // Use the projectRoot calculated at the top, or calculate it from basePath
+            var rootToUse = projectRoot || basePath.replace(/\/app\/$/, '');
             // Remove leading ../ from src
             var cleanPath = src.replace(/^\.\.\//, '');
             // Build full path from project root
-            fullPath = projectRoot + '/' + cleanPath;
+            fullPath = rootToUse + '/' + cleanPath;
         } else {
             fullPath = basePath + src;
         }
