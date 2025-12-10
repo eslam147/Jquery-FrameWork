@@ -14,23 +14,34 @@
     var basePath = '';
     var projectRoot = '';
     
+    // Get base URL (protocol + host)
+    var baseUrl = window.location.protocol + '//' + window.location.host;
+    
     if (scriptSrc) {
-        // boot.js is in vendor/src/js/, so we need to go up to project root
-        var scriptPath = scriptSrc.substring(0, scriptSrc.lastIndexOf('/'));
-        // Remove /vendor/src/js to get to project root
-        projectRoot = scriptPath.replace(/\/vendor\/src\/js$/, '');
-        // For Netlify and other deployments, ensure we have the correct root
-        if (projectRoot.indexOf('http://') === -1 && projectRoot.indexOf('https://') === -1) {
-            // If it's a relative path, get absolute URL
-            var baseUrl = window.location.protocol + '//' + window.location.host;
-            projectRoot = baseUrl + (projectRoot.indexOf('/') === 0 ? '' : '/') + projectRoot;
+        // Check if scriptSrc is absolute URL
+        var isAbsoluteUrl = scriptSrc.indexOf('http://') === 0 || scriptSrc.indexOf('https://') === 0 || scriptSrc.indexOf('//') === 0;
+        
+        if (isAbsoluteUrl) {
+            // boot.js is in vendor/src/js/, so we need to go up to project root
+            var scriptPath = scriptSrc.substring(0, scriptSrc.lastIndexOf('/'));
+            // Remove /vendor/src/js to get to project root
+            projectRoot = scriptPath.replace(/\/vendor\/src\/js$/, '');
+        } else {
+            // Relative path - resolve it from current page location
+            var currentPagePath = window.location.pathname;
+            // Remove filename and any subdirectories to get base
+            var currentDir = currentPagePath.substring(0, currentPagePath.lastIndexOf('/') + 1);
+            // Resolve relative path
+            var resolvedPath = new URL(scriptSrc, baseUrl + currentDir).pathname;
+            // Remove /vendor/src/js to get project root
+            projectRoot = resolvedPath.replace(/\/vendor\/src\/js$/, '');
+            // Ensure it's absolute
+            projectRoot = baseUrl + projectRoot;
         }
         basePath = projectRoot + '/app/';
     } else {
         // Fallback: try to get from document location
         var path = window.location.pathname;
-        // Get base URL
-        var baseUrl = window.location.protocol + '//' + window.location.host;
         // Remove /resources/views/ or any subdirectory to get project root
         projectRoot = baseUrl + path.replace(/\/resources\/views.*$/, '').replace(/\/[^\/]+\.html$/, '');
         if (projectRoot === baseUrl + path) {
