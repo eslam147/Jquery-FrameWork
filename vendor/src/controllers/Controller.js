@@ -520,6 +520,47 @@
                                     args[eventIndex] = e;
                                 }
                                 
+                                // Inject view and compact helpers when request parameter exists
+                                if (reqIndex >= 0) {
+                                    var originalFunc = func;
+                                    var funcStr = originalFunc.toString();
+                                    var bodyMatch = funcStr.match(/\{([\s\S]*)\}$/);
+                                    if (bodyMatch) {
+                                        var functionBody = bodyMatch[1];
+                                        var paramNames = params.map(function(p) { return p.trim(); });
+                                        
+                                        var targetVar = '';
+                                        if (eventIndex >= 0) {
+                                            targetVar = 'var $target = $(arguments[' + eventIndex + '].currentTarget || arguments[' + eventIndex + ']); ';
+                                        }
+                                        
+                                        var newFunctionBody = 'var request = arguments[' + reqIndex + ']; ' +
+                                            targetVar +
+                                            'var view = function(viewName, selector, data) { ' +
+                                            'return Framework.view(viewName, selector, data); ' +
+                                            '}; ' +
+                                            'var compact = function() { ' +
+                                            'var varNames = Array.prototype.slice.call(arguments); ' +
+                                            'var result = {}; ' +
+                                            'for (var i = 0; i < varNames.length; i++) { ' +
+                                            'var name = varNames[i]; ' +
+                                            'try { result[name] = eval(name); } catch(e) {} ' +
+                                            '} ' +
+                                            'return result; ' +
+                                            '}; ' +
+                                            functionBody;
+                                        
+                                        try {
+                                            var newFunc = new Function(paramNames.join(','), newFunctionBody);
+                                            func = function() {
+                                                return newFunc.apply(self, arguments);
+                                            };
+                                        } catch (e) {
+                                            func = originalFunc;
+                                        }
+                                    }
+                                }
+                                
                                 return func.apply(self, args);
                             }
                             
@@ -562,7 +603,7 @@
                                 }
                                 
                                 // إنشاء wrapper function لإضافة alias 'request' تلقائياً
-                                // وإضافة compact helper محسّن
+                                // وإضافة compact helper و view helper
                                 if (reqIndex >= 0) {
                                     var originalFunc = func;
                                     var requestInstanceForClosure = requestInstance; // Capture in closure
