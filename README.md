@@ -263,7 +263,10 @@ The `openModal` method in the Controller class is used to define the modal selec
 
 ```javascript
 public function openModal() {
-    return 'modal1'; // or '#modal1' or '.modal1'
+    return '#modal1'; // or '#modal1' or '.modal1'
+}
+public function openModal() {
+    return '.modal1'; // or '#modal1' or '.modal1'
 }
 ```
 
