@@ -293,8 +293,9 @@
                                     functionBody;
                                 try {
                                     var newFunc = new Function(paramNames.join(','), newFunctionBody);
+                                    var capturedNewFunc = newFunc; // Capture in closure
                                     func = function() {
-                                        return newFunc.apply(self, arguments);
+                                        return capturedNewFunc.apply(self, arguments);
                                     };
                                 } catch (e) {
                                     // If fails, use original function
@@ -552,8 +553,9 @@
                                         
                                         try {
                                             var newFunc = new Function(paramNames.join(','), newFunctionBody);
+                                            var capturedNewFunc = newFunc; // Capture in closure
                                             func = function() {
-                                                return newFunc.apply(self, arguments);
+                                                return capturedNewFunc.apply(self, arguments);
                                             };
                                         } catch (e) {
                                             func = originalFunc;
@@ -642,15 +644,17 @@
                                         // إنشاء function جديد باستخدام Function constructor
                                         try {
                                             var newFunc = new Function(paramNames.join(','), newFunctionBody);
+                                            var capturedNewFunc = newFunc; // Capture in closure
                                             func = function() {
                                                 // التحقق من أن arguments[reqIndex] موجود
                                                 if (!arguments[reqIndex]) {
                                                     // Request instance not found
                                                 }
-                                                return newFunc.apply(self, arguments);
+                                                return capturedNewFunc.apply(self, arguments);
                                             };
                                         } catch (e) {
                                             // إذا فشل، نستخدم الدالة الأصلية
+                                            func = originalFunc;
                                         }
                                     }
                                 }
